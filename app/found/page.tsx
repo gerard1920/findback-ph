@@ -111,7 +111,7 @@ export default function Found({ searchParams }: { searchParams: Promise<{ q?: st
         <div className="mt-8 text-center text-slate-600">Loading...</div>
       ) : items.length ? (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map(i => <ItemCard item={{...i, dateOccurred: new Date(i.dateOccurred), images: i.images || []}} key={i.id} />)}
+          {items.map(i => <ItemCard item={i as any} key={i.id} />)}
         </div>
       ) : (
         <div className="card mt-8 p-10 text-center">
