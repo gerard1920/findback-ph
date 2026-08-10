@@ -130,7 +130,7 @@ export default function Home() {
           <div className="mt-6 text-center text-slate-600">Loading...</div>
         ) : items.length ? (
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map(i => <ItemCard item={{...i, dateOccurred: new Date(i.dateOccurred)}} key={i.id} />)}
+            {items.map(i => <ItemCard item={{...i, dateOccurred: new Date(i.dateOccurred), images: i.images || []}} key={i.id} />)}
           </div>
         ) : (
           <div className="card mt-6 p-10 text-center text-slate-600">No reports yet. Be the first to help an item find its way home.</div>
