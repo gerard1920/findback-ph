@@ -1,18 +1,36 @@
 "use client";
 
-import { Prisma } from "@prisma/client";
-import { db } from "@/lib/db";
+import { useState, useEffect } from "react";
 import { ItemCard } from "@/components/item-card";
 import Link from "next/link";
 import { AutoRefreshItems } from "@/components/auto-refresh-items";
-import { useState, useEffect } from "react";
+
+interface Item {
+  id: string;
+  title: string;
+  type: "LOST" | "FOUND";
+  description: string;
+  city: string;
+  province: string;
+  dateOccurred: string;
+  status: string;
+  createdAt: string;
+  images?: { url: string }[];
+  category?: { name: string };
+}
+
+interface Category {
+  id: string;
+  name: string;
+}
 
 export default function Lost({ searchParams }: { searchParams: Promise<{ q?: string; city?: string; category?: string }> }) {
   const [params, setParams] = useState<{ q?: string; city?: string; category?: string }>({});
-  const [items, setItems] = useState<any[]>([]);
-  const [cats, setCats] = useState<any[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
+  const [cats, setCats] = useState<Category[]>([]);
   const [newItemsCount, setNewItemsCount] = useState(0);
   const [showNotification, setShowNotification] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     searchParams.then(setParams);
@@ -20,34 +38,29 @@ export default function Lost({ searchParams }: { searchParams: Promise<{ q?: str
 
   useEffect(() => {
     async function loadItems() {
-      const p = await searchParams;
-      const q = p.q?.trim();
-      const where: Prisma.ItemWhereInput = {
-        type: "LOST",
-        status: { in: ["ACTIVE", "MATCHED", "CLAIM_PENDING"] },
-        ...(q ? {
-          OR: [
-            { title: { contains: q, mode: "insensitive" } },
-            { description: { contains: q, mode: "insensitive" } },
-            { brand: { contains: q, mode: "insensitive" } },
-          ],
-        } : {}),
-        ...(p.city ? { city: { contains: p.city, mode: "insensitive" } } : {}),
-        ...(p.category ? { category: { name: p.category } } : {}),
-      };
+      setLoading(true);
+      try {
+        const p = await searchParams;
+        const q = p.q?.trim();
+        const city = p.city?.trim();
+        const category = p.category?.trim();
 
-      const [itemsData, catsData] = await Promise.all([
-        db.item.findMany({
-          where,
-          include: { images: { take: 1 }, category: true },
-          orderBy: { createdAt: "desc" },
-          take: 24,
-        }),
-        db.category.findMany(),
-      ]);
+        const searchParamsObj = new URLSearchParams();
+        if (q) searchParamsObj.set("q", q);
+        if (city) searchParamsObj.set("city", city);
+        if (category) searchParamsObj.set("category", category);
 
-      setItems(itemsData);
-      setCats(catsData);
+        const response = await fetch(`/api/items/lost?${searchParamsObj.toString()}`);
+        if (response.ok) {
+          const data = await response.json();
+          setItems(data.items || []);
+          setCats(data.cats || []);
+        }
+      } catch (error) {
+        console.error("Failed to load items:", error);
+      } finally {
+        setLoading(false);
+      }
     }
 
     loadItems();
@@ -57,7 +70,6 @@ export default function Lost({ searchParams }: { searchParams: Promise<{ q?: str
     setNewItemsCount(count);
     setShowNotification(true);
     
-    // Auto-hide notification after 5 seconds
     setTimeout(() => {
       setShowNotification(false);
     }, 5000);
@@ -65,30 +77,21 @@ export default function Lost({ searchParams }: { searchParams: Promise<{ q?: str
 
   const refreshItems = async () => {
     const q = params.q?.trim();
-    const where: Prisma.ItemWhereInput = {
-      type: "LOST",
-      status: { in: ["ACTIVE", "MATCHED", "CLAIM_PENDING"] },
-      ...(q ? {
-        OR: [
-          { title: { contains: q, mode: "insensitive" } },
-          { description: { contains: q, mode: "insensitive" } },
-          { brand: { contains: q, mode: "insensitive" } },
-        ],
-      } : {}),
-      ...(params.city ? { city: { contains: params.city, mode: "insensitive" } } : {}),
-      ...(params.category ? { category: { name: params.category } } : {}),
-    };
+    const city = params.city?.trim();
+    const category = params.category?.trim();
 
-    const itemsData = await db.item.findMany({
-      where,
-      include: { images: { take: 1 }, category: true },
-      orderBy: { createdAt: "desc" },
-      take: 24,
-    });
+    const searchParamsObj = new URLSearchParams();
+    if (q) searchParamsObj.set("q", q);
+    if (city) searchParamsObj.set("city", city);
+    if (category) searchParamsObj.set("category", category);
 
-    setItems(itemsData);
-    setNewItemsCount(0);
-    setShowNotification(false);
+    const response = await fetch(`/api/items/lost?${searchParamsObj.toString()}`);
+    if (response.ok) {
+      const data = await response.json();
+      setItems(data.items || []);
+      setNewItemsCount(0);
+      setShowNotification(false);
+    }
   };
 
   return (
@@ -120,7 +123,9 @@ export default function Lost({ searchParams }: { searchParams: Promise<{ q?: str
         <button className="btn-primary">Apply filters</button>
       </form>
 
-      {items.length ? (
+      {loading ? (
+        <div className="mt-8 text-center text-slate-600">Loading...</div>
+      ) : items.length ? (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {items.map(i => <ItemCard item={i} key={i.id} />)}
         </div>

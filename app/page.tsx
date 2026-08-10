@@ -2,10 +2,19 @@
 
 import Link from "next/link";
 import { Search, Smartphone, Wallet, KeyRound, Backpack, FileText, Gem, CarFront, BookOpen, Package } from "lucide-react";
-import { db } from "@/lib/db";
 import { ItemCard } from "@/components/item-card";
 import { AutoRefreshItems } from "@/components/auto-refresh-items";
 import { useState, useEffect } from "react";
+
+interface Item {
+  id: string;
+  title: string;
+  description: string;
+  status: string;
+  createdAt: string;
+  images?: { url: string }[];
+  category?: { name: string };
+}
 
 const cats: [string, typeof Smartphone][] = [
   ['Electronics', Smartphone],
@@ -20,22 +29,25 @@ const cats: [string, typeof Smartphone][] = [
 ];
 
 export default function Home() {
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
   const [newItemsCount, setNewItemsCount] = useState(0);
   const [showNotification, setShowNotification] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     async function loadItems() {
-      const itemsData = await db.item.findMany({
-        where: {
-          status: { in: ["ACTIVE", "MATCHED", "CLAIM_PENDING"] },
-        },
-        include: { images: { take: 1 }, category: true },
-        orderBy: { createdAt: "desc" },
-        take: 6,
-      }).catch(() => []);
-
-      setItems(itemsData);
+      setLoading(true);
+      try {
+        const response = await fetch("/api/items/recent");
+        if (response.ok) {
+          const data = await response.json();
+          setItems(data.items || []);
+        }
+      } catch (error) {
+        console.error("Failed to load items:", error);
+      } finally {
+        setLoading(false);
+      }
     }
 
     loadItems();
@@ -51,18 +63,13 @@ export default function Home() {
   };
 
   const refreshItems = async () => {
-    const itemsData = await db.item.findMany({
-      where: {
-        status: { in: ["ACTIVE", "MATCHED", "CLAIM_PENDING"] },
-      },
-      include: { images: { take: 1 }, category: true },
-      orderBy: { createdAt: "desc" },
-      take: 6,
-    }).catch(() => []);
-
-    setItems(itemsData);
-    setNewItemsCount(0);
-    setShowNotification(false);
+    const response = await fetch("/api/items/recent");
+    if (response.ok) {
+      const data = await response.json();
+      setItems(data.items || []);
+      setNewItemsCount(0);
+      setShowNotification(false);
+    }
   };
 
   return (
@@ -119,7 +126,9 @@ export default function Home() {
           </div>
           <Link href="/lost" className="text-sm font-semibold text-blue-700">Browse all</Link>
         </div>
-        {items.length ? (
+        {loading ? (
+          <div className="mt-6 text-center text-slate-600">Loading...</div>
+        ) : items.length ? (
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
             {items.map(i => <ItemCard item={i} key={i.id} />)}
           </div>

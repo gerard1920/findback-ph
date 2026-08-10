@@ -1,15 +1,29 @@
 "use client";
 
-import { db } from "@/lib/db";
+import { useState, useEffect } from "react";
 import { ItemCard } from "@/components/item-card";
 import { AutoRefreshItems } from "@/components/auto-refresh-items";
-import { useState, useEffect } from "react";
+
+interface Item {
+  id: string;
+  title: string;
+  type: "LOST" | "FOUND";
+  description: string;
+  city: string;
+  province: string;
+  dateOccurred: string;
+  status: string;
+  createdAt: string;
+  images?: { url: string }[];
+  category?: { name: string };
+}
 
 export default function Found({ searchParams }: { searchParams: Promise<{ q?: string; city?: string }> }) {
   const [params, setParams] = useState<{ q?: string; city?: string }>({});
-  const [items, setItems] = useState<any[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
   const [newItemsCount, setNewItemsCount] = useState(0);
   const [showNotification, setShowNotification] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     searchParams.then(setParams);
@@ -17,26 +31,26 @@ export default function Found({ searchParams }: { searchParams: Promise<{ q?: st
 
   useEffect(() => {
     async function loadItems() {
-      const p = await searchParams;
-      const q = p.q?.trim();
-      const itemsData = await db.item.findMany({
-        where: {
-          type: "FOUND",
-          status: { in: ["ACTIVE", "MATCHED", "CLAIM_PENDING"] },
-          ...(q ? {
-            OR: [
-              { title: { contains: q, mode: "insensitive" } },
-              { description: { contains: q, mode: "insensitive" } },
-            ],
-          } : {}),
-          ...(p.city ? { city: { contains: p.city, mode: "insensitive" } } : {}),
-        },
-        include: { images: { take: 1 }, category: true },
-        orderBy: { createdAt: "desc" },
-        take: 24,
-      });
+      setLoading(true);
+      try {
+        const p = await searchParams;
+        const q = p.q?.trim();
+        const city = p.city?.trim();
 
-      setItems(itemsData);
+        const searchParamsObj = new URLSearchParams();
+        if (q) searchParamsObj.set("q", q);
+        if (city) searchParamsObj.set("city", city);
+
+        const response = await fetch(`/api/items/found?${searchParamsObj.toString()}`);
+        if (response.ok) {
+          const data = await response.json();
+          setItems(data.items || []);
+        }
+      } catch (error) {
+        console.error("Failed to load items:", error);
+      } finally {
+        setLoading(false);
+      }
     }
 
     loadItems();
@@ -46,7 +60,6 @@ export default function Found({ searchParams }: { searchParams: Promise<{ q?: st
     setNewItemsCount(count);
     setShowNotification(true);
     
-    // Auto-hide notification after 5 seconds
     setTimeout(() => {
       setShowNotification(false);
     }, 5000);
@@ -54,26 +67,19 @@ export default function Found({ searchParams }: { searchParams: Promise<{ q?: st
 
   const refreshItems = async () => {
     const q = params.q?.trim();
-    const itemsData = await db.item.findMany({
-      where: {
-        type: "FOUND",
-        status: { in: ["ACTIVE", "MATCHED", "CLAIM_PENDING"] },
-        ...(q ? {
-          OR: [
-            { title: { contains: q, mode: "insensitive" } },
-            { description: { contains: q, mode: "insensitive" } },
-          ],
-        } : {}),
-        ...(params.city ? { city: { contains: params.city, mode: "insensitive" } } : {}),
-      },
-      include: { images: { take: 1 }, category: true },
-      orderBy: { createdAt: "desc" },
-      take: 24,
-    });
+    const city = params.city?.trim();
 
-    setItems(itemsData);
-    setNewItemsCount(0);
-    setShowNotification(false);
+    const searchParamsObj = new URLSearchParams();
+    if (q) searchParamsObj.set("q", q);
+    if (city) searchParamsObj.set("city", city);
+
+    const response = await fetch(`/api/items/found?${searchParamsObj.toString()}`);
+    if (response.ok) {
+      const data = await response.json();
+      setItems(data.items || []);
+      setNewItemsCount(0);
+      setShowNotification(false);
+    }
   };
 
   return (
@@ -101,7 +107,9 @@ export default function Found({ searchParams }: { searchParams: Promise<{ q?: st
         <button className="btn-primary">Search</button>
       </form>
 
-      {items.length ? (
+      {loading ? (
+        <div className="mt-8 text-center text-slate-600">Loading...</div>
+      ) : items.length ? (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {items.map(i => <ItemCard item={i} key={i.id} />)}
         </div>
