@@ -1,0 +1,1 @@
+import Link from "next/link";export default function NotFound(){return <main className="container-page py-24 text-center"><h1 className="text-4xl font-bold">Page not found</h1><p className="mt-3 text-slate-600">The item or page you&apos;re looking for may have been removed.</p><Link className="btn-primary mt-6" href="/">Go home</Link></main>}

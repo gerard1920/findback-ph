@@ -1,0 +1,234 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  USER
+  ADMIN
+  SUSPENDED
+}
+
+enum ItemType {
+  LOST
+  FOUND
+}
+
+enum ItemStatus {
+  ACTIVE
+  MATCHED
+  CLAIM_PENDING
+  RESOLVED
+  EXPIRED
+  REMOVED
+}
+
+enum MatchStatus {
+  PENDING
+  CONTACTED
+  VERIFIED
+  REJECTED
+  RESOLVED
+}
+
+enum ClaimStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  CANCELLED
+}
+
+enum ReportReason {
+  FAKE_LISTING
+  SCAM
+  HARASSMENT
+  STOLEN
+  INAPPROPRIATE
+  SPAM
+  SUSPICIOUS
+}
+
+model User {
+  id             String          @id @default(uuid())
+  email          String          @unique
+  passwordHash   String
+  displayName    String
+  username       String          @unique
+  role           Role            @default(USER)
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+  items          Item[]
+  savedItems     SavedItem[]
+  notifications  Notification[]
+  messages       Message[]
+  reportsMade    Report[]
+  blockedUsers   Block[]         @relation("Blocker")
+  blockedBy      Block[]         @relation("Blocked")
+  passwordResets PasswordReset[]
+
+  @@index([createdAt])
+}
+
+model Category {
+  id    String @id @default(uuid())
+  name  String @unique
+  slug  String @unique
+  items Item[]
+}
+
+model Item {
+  id                     String      @id @default(uuid())
+  ownerId                String
+  owner                  User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  categoryId             String
+  category               Category    @relation(fields: [categoryId], references: [id])
+  type                   ItemType
+  status                 ItemStatus  @default(ACTIVE)
+  title                  String
+  brand                  String?
+  color                  String?
+  description            String
+  distinguishingFeatures String?
+  privateSerial          String?
+  privateProof           String?
+  reward                 String?
+  province               String
+  city                   String
+  barangay               String?
+  approximateLocation    String
+  dateOccurred           DateTime
+  images                 ItemImage[]
+  savedBy                SavedItem[]
+  claims                 Claim[]
+  reports                Report[]
+  createdAt              DateTime    @default(now())
+  updatedAt              DateTime    @updatedAt
+
+  @@index([type, status, createdAt])
+  @@index([categoryId])
+  @@index([province, city])
+}
+
+model ItemImage {
+  id        String   @id @default(uuid())
+  itemId    String
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  url       String
+  alt       String?
+  createdAt DateTime @default(now())
+}
+
+model Match {
+  id          String      @id @default(uuid())
+  lostItemId  String
+  foundItemId String
+  score       Int
+  status      MatchStatus @default(PENDING)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  @@unique([lostItemId, foundItemId])
+  @@index([lostItemId])
+  @@index([foundItemId])
+}
+
+model Claim {
+  id                 String      @id @default(uuid())
+  itemId             String
+  item               Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  claimantId         String
+  verificationAnswer String
+  status             ClaimStatus @default(PENDING)
+  createdAt          DateTime    @default(now())
+  updatedAt          DateTime    @updatedAt
+
+  @@index([itemId, status])
+}
+
+model Conversation {
+  id             String    @id @default(uuid())
+  itemId         String?
+  participantAId String
+  participantBId String
+  createdAt      DateTime  @default(now())
+  messages       Message[]
+
+  @@unique([itemId, participantAId, participantBId])
+}
+
+model Message {
+  id             String       @id @default(uuid())
+  conversationId String
+  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId       String
+  sender         User         @relation(fields: [senderId], references: [id])
+  body           String
+  readAt         DateTime?
+  createdAt      DateTime     @default(now())
+
+  @@index([conversationId, createdAt])
+}
+
+model Notification {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  body      String
+  link      String?
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId, readAt])
+}
+
+model SavedItem {
+  userId    String
+  itemId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([userId, itemId])
+}
+
+model Report {
+  id         String       @id @default(uuid())
+  itemId     String
+  item       Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  reporterId String
+  reporter   User         @relation(fields: [reporterId], references: [id])
+  reason     ReportReason
+  details    String?
+  status     String       @default("PENDING")
+  createdAt  DateTime     @default(now())
+
+  @@index([status, createdAt])
+}
+
+model Block {
+  blockerId String
+  blockedId String
+  blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
+  blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+
+  @@id([blockerId, blockedId])
+}
+
+model PasswordReset {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  usedAt    DateTime?
+
+  @@index([expiresAt])
+}

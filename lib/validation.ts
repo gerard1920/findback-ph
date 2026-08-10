@@ -1,0 +1,3 @@
+import { z } from "zod";
+export const authSchema=z.object({email:z.string().email(),password:z.string().min(8).max(72),displayName:z.string().min(2).max(60).optional()});
+export const itemSchema=z.object({title:z.string().min(3).max(120),categoryId:z.string().uuid(),brand:z.string().max(60).optional(),color:z.string().max(40).optional(),description:z.string().min(10).max(2000),distinguishingFeatures:z.string().max(1000).optional(),privateSerial:z.string().max(200).optional(),privateProof:z.string().max(2000).optional(),reward:z.string().max(100).optional(),province:z.string().min(2).max(80),city:z.string().min(2).max(80),barangay:z.string().max(80).optional(),approximateLocation:z.string().min(2).max(160),dateOccurred:z.coerce.date()});

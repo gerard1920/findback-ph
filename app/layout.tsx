@@ -1,0 +1,4 @@
+import type { Metadata } from "next";import "./globals.css";import { Navbar } from "@/components/navbar";import Link from "next/link";
+export const metadata:Metadata={title:"FindBack PH — Lost & Found Philippines",description:"Find lost belongings, report found items, and connect with people in your community."};
+export const dynamic = "force-dynamic";
+export default function RootLayout({children}:{children:React.ReactNode}){return <html lang="en"><body><Navbar/>{children}<footer className="mt-16 border-t bg-white py-8"><div className="container-page flex flex-wrap justify-between gap-3 text-sm text-slate-600"><span>© {new Date().getFullYear()} FindBack PH</span><div className="flex gap-4"><Link href="/safety">Safety</Link><Link href="/about">About</Link><Link href="/report">Report abuse</Link></div></div></footer></body></html>}
