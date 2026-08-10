@@ -1,26 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ItemCard } from "@/components/item-card";
+import { ItemCard, parseCardItem, type CardItemInput } from "@/components/item-card";
 import { AutoRefreshItems } from "@/components/auto-refresh-items";
-
-interface Item {
-  id: string;
-  title: string;
-  type: "LOST" | "FOUND";
-  description: string;
-  city: string;
-  province: string;
-  dateOccurred: string;
-  status: string;
-  createdAt: string;
-  images?: { url: string }[];
-  category?: { name: string };
-}
 
 export default function Found({ searchParams }: { searchParams: Promise<{ q?: string; city?: string }> }) {
   const [params, setParams] = useState<{ q?: string; city?: string }>({});
-  const [items, setItems] = useState<Item[]>([]);
+  const [items, setItems] = useState<CardItemInput[]>([]);
   const [newItemsCount, setNewItemsCount] = useState(0);
   const [showNotification, setShowNotification] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -111,7 +97,9 @@ export default function Found({ searchParams }: { searchParams: Promise<{ q?: st
         <div className="mt-8 text-center text-slate-600">Loading...</div>
       ) : items.length ? (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map(i => <ItemCard item={i as any} key={i.id} />)}
+          {items.map((i) => (
+            <ItemCard item={parseCardItem(i)} key={i.id} />
+          ))}
         </div>
       ) : (
         <div className="card mt-8 p-10 text-center">

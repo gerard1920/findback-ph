@@ -13,8 +13,8 @@ export function AdminResetButton({ userId, username }: { userId: string; usernam
     try {
       const res = await sendPasswordReset(userId, {}, new FormData());
       setResult(res);
-    } catch (e: any) {
-      setResult({ error: e?.message ?? "Something went wrong." });
+    } catch (e: unknown) {
+      setResult({ error: e instanceof Error ? e.message : "Something went wrong." });
     } finally {
       setBusy(false);
     }

@@ -1,3 +1,85 @@
-import Link from "next/link";import { MapPin, CalendarDays } from "lucide-react";
-export type CardItem={id:string;title:string;type:"LOST"|"FOUND";description:string;city:string;province:string;dateOccurred:Date;images:{url:string}[];category:{name:string}};
-export function ItemCard({item}:{item:CardItem}){const found=item.type==="FOUND";return <article className="card overflow-hidden"><div className="h-44 bg-slate-100">{item.images[0]?<img src={item.images[0].url} alt={item.title} className="h-full w-full object-cover"/>:<div className="grid h-full place-items-center text-slate-400">No photo provided</div>}</div><div className="p-4"><span className={`rounded-full px-2 py-1 text-xs font-bold ${found?"bg-emerald-100 text-emerald-700":"bg-orange-100 text-orange-700"}`}>{item.type}</span><h3 className="mt-3 font-semibold">{item.title}</h3><p className="mt-1 text-sm text-slate-600">{item.category.name}</p><p className="mt-3 flex items-center gap-1 text-sm text-slate-600"><MapPin size={15}/>{item.city}, {item.province}</p><p className="mt-1 flex items-center gap-1 text-sm text-slate-500"><CalendarDays size={15}/>{item.dateOccurred.toLocaleDateString("en-PH",{month:"short",day:"numeric",year:"numeric"})}</p><p className="mt-3 line-clamp-2 text-sm text-slate-600">{item.description}</p><Link className="btn-secondary mt-4 w-full" href={`/items/${item.id}`}>View item</Link></div></article>}
+import Link from "next/link";
+import { MapPin, CalendarDays } from "lucide-react";
+
+export type CardItem = {
+  id: string;
+  title: string;
+  type: "LOST" | "FOUND";
+  description: string;
+  city: string;
+  province: string;
+  dateOccurred: Date;
+  images: { url: string }[];
+  category: { name: string };
+};
+
+export type CardItemInput = {
+  id: string;
+  title: string;
+  type: "LOST" | "FOUND";
+  description: string;
+  city: string;
+  province: string;
+  dateOccurred: string | Date;
+  images?: { url: string }[];
+  category?: { name: string };
+};
+
+export function parseCardItem(item: CardItemInput): CardItem {
+  return {
+    id: item.id,
+    title: item.title,
+    type: item.type,
+    description: item.description,
+    city: item.city,
+    province: item.province,
+    dateOccurred:
+      item.dateOccurred instanceof Date ? item.dateOccurred : new Date(item.dateOccurred),
+    images: item.images ?? [],
+    category: item.category ?? { name: "Other" },
+  };
+}
+
+export function ItemCard({ item }: { item: CardItem }) {
+  const found = item.type === "FOUND";
+  return (
+    <article className="card overflow-hidden">
+      <div className="h-44 bg-slate-100">
+        {item.images[0] ? (
+          <img
+            src={item.images[0].url}
+            alt={item.title}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <div className="grid h-full place-items-center text-slate-400">No photo provided</div>
+        )}
+      </div>
+      <div className="p-4">
+        <span
+          className={`rounded-full px-2 py-1 text-xs font-bold ${found ? "bg-emerald-100 text-emerald-700" : "bg-orange-100 text-orange-700"}`}
+        >
+          {item.type}
+        </span>
+        <h3 className="mt-3 font-semibold">{item.title}</h3>
+        <p className="mt-1 text-sm text-slate-600">{item.category.name}</p>
+        <p className="mt-3 flex items-center gap-1 text-sm text-slate-600">
+          <MapPin size={15} />
+          {item.city}, {item.province}
+        </p>
+        <p className="mt-1 flex items-center gap-1 text-sm text-slate-500">
+          <CalendarDays size={15} />
+          {item.dateOccurred.toLocaleDateString("en-PH", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+          })}
+        </p>
+        <p className="mt-3 line-clamp-2 text-sm text-slate-600">{item.description}</p>
+        <Link className="btn-secondary mt-4 w-full" href={`/items/${item.id}`}>
+          View item
+        </Link>
+      </div>
+    </article>
+  );
+}

@@ -54,7 +54,7 @@ export default async function UserProfile({ params }: { params: Promise<{ id: st
         </div>
       ) : (
         <div className="card mt-5 p-10 text-center text-slate-600">
-          This member doesn't have any active reports right now.
+          This member doesn&apos;t have any active reports right now.
         </div>
       )}
     </main>

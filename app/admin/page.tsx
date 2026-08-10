@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
-import { Prisma, ItemStatus } from "@prisma/client";
+import { ItemStatus } from "@prisma/client";
 import { ConfirmButton } from "@/components/confirm-button";
 import { ShieldCheck } from "lucide-react";
 import { setRole, deleteUser } from "@/app/actions";

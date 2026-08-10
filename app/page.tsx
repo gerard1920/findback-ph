@@ -2,19 +2,9 @@
 
 import Link from "next/link";
 import { Search, Smartphone, Wallet, KeyRound, Backpack, FileText, Gem, CarFront, BookOpen, Package } from "lucide-react";
-import { ItemCard } from "@/components/item-card";
+import { ItemCard, parseCardItem, type CardItemInput } from "@/components/item-card";
 import { AutoRefreshItems } from "@/components/auto-refresh-items";
 import { useState, useEffect } from "react";
-
-interface Item {
-  id: string;
-  title: string;
-  description: string;
-  status: string;
-  createdAt: string;
-  images?: { url: string }[];
-  category?: { name: string };
-}
 
 const cats: [string, typeof Smartphone][] = [
   ['Electronics', Smartphone],
@@ -29,7 +19,7 @@ const cats: [string, typeof Smartphone][] = [
 ];
 
 export default function Home() {
-  const [items, setItems] = useState<Item[]>([]);
+  const [items, setItems] = useState<CardItemInput[]>([]);
   const [newItemsCount, setNewItemsCount] = useState(0);
   const [showNotification, setShowNotification] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -130,7 +120,9 @@ export default function Home() {
           <div className="mt-6 text-center text-slate-600">Loading...</div>
         ) : items.length ? (
           <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {items.map(i => <ItemCard item={i as any} key={i.id} />)}
+            {items.map((i) => (
+              <ItemCard item={parseCardItem(i)} key={i.id} />
+            ))}
           </div>
         ) : (
           <div className="card mt-6 p-10 text-center text-slate-600">No reports yet. Be the first to help an item find its way home.</div>

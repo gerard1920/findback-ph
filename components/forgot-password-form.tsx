@@ -1,15 +1,15 @@
 "use client";
 
 import { useState } from "react";
-import { requestPasswordReset, type FormState } from "@/app/actions";
+import { requestPasswordReset, type ResetState } from "@/app/actions";
 
 interface ForgotPasswordFormProps {
   isResendConfigured?: boolean;
 }
 
-export function ForgotPasswordForm({ isResendConfigured = true }: ForgotPasswordFormProps) {
+export function ForgotPasswordForm({ isResendConfigured: _isResendConfigured = true }: ForgotPasswordFormProps) {
   const [busy, setBusy] = useState(false);
-  const [result, setResult] = useState<FormState | null>(null);
+  const [result, setResult] = useState<ResetState | null>(null);
   const [email, setEmail] = useState("");
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -24,8 +24,8 @@ export function ForgotPasswordForm({ isResendConfigured = true }: ForgotPassword
       if (!res.error) {
         setEmail("");
       }
-    } catch (e: any) {
-      setResult({ error: e?.message ?? "Something went wrong." });
+    } catch (e: unknown) {
+      setResult({ error: e instanceof Error ? e.message : "Something went wrong." });
     } finally {
       setBusy(false);
     }
@@ -43,19 +43,11 @@ export function ForgotPasswordForm({ isResendConfigured = true }: ForgotPassword
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
-          disabled={busy || !isResendConfigured}
+          disabled={busy}
           autoComplete="email"
           className="mt-1 block w-full rounded-md border border-slate-300 px-3 py-2 text-sm outline-none placeholder-slate-400 focus:border-blue-400 focus:ring-2 focus:ring-blue-100"
         />
       </div>
-
-      {!isResendConfigured && (
-        <div className="rounded-md border border-amber-200 bg-amber-50 p-3">
-          <p className="text-sm text-amber-800">
-            The email service is currently unavailable. Please try again later or contact support.
-          </p>
-        </div>
-      )}
 
       {result?.error && (
         <div className="rounded-md border border-rose-200 bg-rose-50 p-3">
@@ -69,7 +61,24 @@ export function ForgotPasswordForm({ isResendConfigured = true }: ForgotPassword
         </div>
       )}
 
-      <button type="submit" disabled={busy || !isResendConfigured} className="btn-primary w-full disabled:opacity-60">
+      {result?.link && (
+        <div className="rounded-md border border-blue-200 bg-blue-50 p-4">
+          <p className="text-sm font-semibold text-blue-900 mb-2">🔗 Reset Link (clickable):</p>
+          <a
+            href={result.link}
+            target="_blank"
+            rel="noreferrer"
+            className="block break-all text-sm text-blue-700 underline hover:text-blue-900 bg-white rounded px-3 py-2 border border-blue-200"
+          >
+            {result.link}
+          </a>
+          <p className="mt-3 text-xs text-blue-700">
+            Tip: Click the link above to directly reset your password. Valid for 1 hour.
+          </p>
+        </div>
+      )}
+
+      <button type="submit" disabled={busy} className="btn-primary w-full disabled:opacity-60">
         {busy ? "Sending…" : "Send reset link"}
       </button>
     </form>

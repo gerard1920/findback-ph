@@ -1,23 +1,9 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { ItemCard } from "@/components/item-card";
+import { ItemCard, parseCardItem, type CardItemInput } from "@/components/item-card";
 import Link from "next/link";
 import { AutoRefreshItems } from "@/components/auto-refresh-items";
-
-interface Item {
-  id: string;
-  title: string;
-  type: "LOST" | "FOUND";
-  description: string;
-  city: string;
-  province: string;
-  dateOccurred: string;
-  status: string;
-  createdAt: string;
-  images?: { url: string }[];
-  category?: { name: string };
-}
 
 interface Category {
   id: string;
@@ -26,7 +12,7 @@ interface Category {
 
 export default function Lost({ searchParams }: { searchParams: Promise<{ q?: string; city?: string; category?: string }> }) {
   const [params, setParams] = useState<{ q?: string; city?: string; category?: string }>({});
-  const [items, setItems] = useState<Item[]>([]);
+  const [items, setItems] = useState<CardItemInput[]>([]);
   const [cats, setCats] = useState<Category[]>([]);
   const [newItemsCount, setNewItemsCount] = useState(0);
   const [showNotification, setShowNotification] = useState(false);
@@ -127,7 +113,9 @@ export default function Lost({ searchParams }: { searchParams: Promise<{ q?: str
         <div className="mt-8 text-center text-slate-600">Loading...</div>
       ) : items.length ? (
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {items.map(i => <ItemCard item={i as any} key={i.id} />)}
+          {items.map((i) => (
+            <ItemCard item={parseCardItem(i)} key={i.id} />
+          ))}
         </div>
       ) : (
         <div className="card mt-8 p-12 text-center">

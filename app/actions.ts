@@ -1,5 +1,4 @@
 "use server";
-import type { Prisma } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { randomUUID } from "crypto";
 import { mkdir, writeFile } from "fs/promises";
@@ -11,7 +10,7 @@ import { z } from "zod";
 import { clearSession, currentUser, requireUser, setSession } from "@/lib/auth";
 import { generateMatches } from "@/lib/matching";
 import { isUuid, sha256 } from "@/lib/crypto";
-import { sendPasswordResetEmail } from "@/lib/mail";
+import { sendPasswordResetEmail, isAnyEmailConfigured, shouldExposeResetLink, isDevEmailMode } from "@/lib/mail";
 export type FormState={error?:string;success?:string};
 export async function register(_:FormState,fd:FormData):Promise<FormState>{const parsed=authSchema.safeParse(Object.fromEntries(fd));if(!parsed.success||!parsed.data.displayName)return{error:"Enter a valid name, email, and password (8+ characters)."};const email=parsed.data.email.toLowerCase();const username=email.split("@")[0].replace(/[^a-z0-9]/g,"").slice(0,16)+Math.floor(Math.random()*9999);try{const user=await db.user.create({data:{email,passwordHash:await bcrypt.hash(parsed.data.password,12),displayName:parsed.data.displayName,username}});await setSession(user.id)}catch{return{error:"An account already exists with that email."}}redirect("/dashboard")}
 export async function login(_:FormState,fd:FormData):Promise<FormState>{const parsed=authSchema.safeParse(Object.fromEntries(fd));if(!parsed.success)return{error:"Enter a valid email and password."};const user=await db.user.findUnique({where:{email:parsed.data.email.toLowerCase()}});if(!user||!await bcrypt.compare(parsed.data.password,user.passwordHash))return{error:"Incorrect email or password."};if(user.role==="SUSPENDED")return{error:"This account is suspended."};await setSession(user.id);redirect("/dashboard")}
@@ -77,7 +76,7 @@ export async function sendPasswordReset(
   const now = new Date();
 
   // Prevent spamming the same account with reset emails.
-  const recent = await (db as any).passwordReset.findFirst({
+  const recent = await db.passwordReset.findFirst({
     where: {
       userId: target.id,
       usedAt: null,
@@ -92,10 +91,10 @@ export async function sendPasswordReset(
   }
 
   // invalidate any outstanding reset tokens for this user
-  await (db as any).passwordReset.deleteMany({ where: { userId: target.id } });
+  await db.passwordReset.deleteMany({ where: { userId: target.id } });
 
   const token = randomUUID();
-  await (db as any).passwordReset.create({
+  await db.passwordReset.create({
     data: {
       tokenHash: sha256(token),
       userId: target.id,
@@ -107,8 +106,11 @@ export async function sendPasswordReset(
 
   try {
     await sendPasswordResetEmail({ to: target.email, username: target.username, link });
-  } catch (error: any) {
-    return { error: error?.message ?? "Failed to send reset email." };
+  } catch (error: unknown) {
+    return {
+      error: error instanceof Error ? error.message : "Failed to send reset email.",
+      link,
+    };
   }
 
   return { success: `Reset link generated for @${target.username}.`, link };
@@ -124,7 +126,7 @@ export async function resetPassword(_prevState: FormState, fd: FormData): Promis
   if (!parsed.success) return { error: "This password-reset link is invalid or expired. Please request a new one." };
 
   const now = new Date();
-  const row = await (db as any).passwordReset.findFirst({
+  const row = await db.passwordReset.findFirst({
     where: { tokenHash: sha256(parsed.data.token), usedAt: null, expiresAt: { gte: now } },
     select: { id: true, userId: true },
   });
@@ -146,11 +148,21 @@ export async function resetPassword(_prevState: FormState, fd: FormData): Promis
 // Returns generic success when the email is unknown to avoid enumeration.
 // Returns a specific error only when the account exists but sending failed,
 // so the user knows to try again later instead of waiting for nothing.
-export async function requestPasswordReset(_prevState: FormState, fd: FormData): Promise<FormState> {
+const RESET_GENERIC_SUCCESS =
+  "If an account exists with that email, we've sent a password-reset link. Check your inbox and spam folder.";
+
+export async function requestPasswordReset(_prevState: ResetState, fd: FormData): Promise<ResetState> {
   const email = (fd.get("email")?.toString() ?? "").trim().toLowerCase();
   const parsed = z.string().email().safeParse(email);
   if (!parsed.success) {
     return { error: "Please enter a valid email address." };
+  }
+
+  if (!isAnyEmailConfigured()) {
+    return {
+      error:
+        "Password reset email is not configured on this server. Ask an administrator to set DEV_EMAIL_MODE=true (dev), or configure SMTP/Gmail or Resend credentials.",
+    };
   }
 
   const target = await db.user.findUnique({
@@ -159,12 +171,18 @@ export async function requestPasswordReset(_prevState: FormState, fd: FormData):
   });
 
   if (!target) {
-    return { success: "If an account exists with that email, we&apos;ve sent a password-reset link." };
+    if (process.env.NODE_ENV === "development") {
+      return {
+        error:
+          "No account is registered with this email. Create an account with this address first, or use the email you used when you signed up.",
+      };
+    }
+    return { success: RESET_GENERIC_SUCCESS };
   }
 
   const now = new Date();
 
-  const recent = await (db as any).passwordReset.findFirst({
+  const recent = await db.passwordReset.findFirst({
     where: {
       userId: target.id,
       usedAt: null,
@@ -175,13 +193,16 @@ export async function requestPasswordReset(_prevState: FormState, fd: FormData):
   });
 
   if (recent) {
-    return { success: "If an account exists with that email, we&apos;ve sent a password-reset link." };
+    return {
+      success:
+        "A reset link was already sent recently. Check your inbox and spam folder, or wait about 15 minutes before requesting another.",
+    };
   }
 
-  await (db as any).passwordReset.deleteMany({ where: { userId: target.id } });
+  await db.passwordReset.deleteMany({ where: { userId: target.id } });
 
   const token = randomUUID();
-  await (db as any).passwordReset.create({
+  await db.passwordReset.create({
     data: {
       tokenHash: sha256(token),
       userId: target.id,
@@ -191,11 +212,41 @@ export async function requestPasswordReset(_prevState: FormState, fd: FormData):
 
   const link = `${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000"}/reset-password?token=${token}`;
 
+  let emailResult: "success" | "failed" = "success";
+  let emailError: string | undefined;
+
   try {
     await sendPasswordResetEmail({ to: target.email, username: target.username, link });
-  } catch (error: any) {
-    return { error: error?.message ?? "We couldn&apos;t send the reset email. Please try again later." };
+  } catch (error: unknown) {
+    emailResult = "failed";
+    emailError = error instanceof Error ? error.message : "We couldn't send the reset email.";
   }
 
-  return { success: "If an account exists with that email, we&apos;ve sent a password-reset link." };
+  if (isDevEmailMode()) {
+    redirect(link);
+  }
+
+  if (shouldExposeResetLink()) {
+    if (emailResult === "failed") {
+      return {
+        success:
+          "Email couldn't be sent, but here's your reset link (development mode). Click the link below to reset your password.",
+        link,
+      };
+    }
+    return {
+      success:
+        "We sent a password-reset link to your email (and it's shown below for development). Check your inbox and spam folder — the link expires in 1 hour.",
+      link,
+    };
+  }
+
+  if (emailResult === "failed") {
+    return { error: emailError ?? "We couldn't send the reset email. Please try again later." };
+  }
+
+  return {
+    success:
+      "We sent a password-reset link to your email. Check your inbox and spam folder — the link expires in 1 hour.",
+  };
 }

@@ -32,8 +32,8 @@ export function ResetForm({ token }: { token: string }) {
         setPassword("");
         setConfirm("");
       }
-    } catch (e: any) {
-      setResult({ error: e?.message ?? "Something went wrong." });
+    } catch (e: unknown) {
+      setResult({ error: e instanceof Error ? e.message : "Something went wrong." });
     } finally {
       setBusy(false);
     }
