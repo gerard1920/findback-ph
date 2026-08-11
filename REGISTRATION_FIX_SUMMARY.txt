@@ -1,0 +1,36 @@
+﻿# REGISTRATION FIX - SUMMARY
+
+## ROOT CAUSE
+Frontend was calling Next.js API routes (/api/auth/login/, /api/auth/register/) 
+that use SQLite, instead of PHP endpoints (/api/login.php, /api/register.php) 
+that connect to InfinityFree MySQL.
+
+## FILES CHANGED
+1. components/auth-form.tsx - Changed to call PHP endpoints
+2. api/config.php - Fixed database password
+3. Created findbackph.sql - Correct MySQL schema
+4. Deleted app/api/auth/ - Removed unnecessary Next.js routes
+
+## UPLOAD TO INFINITYFREE
+
+REQUIRED:
+- api/*.php (all PHP files)
+- components/auth-form.tsx
+- findbackph.sql (import to phpMyAdmin FIRST)
+- app/ (Next.js pages)
+
+## DATABASE CREDENTIALS (Already Correct)
+Host: sql208.infinityfree.com
+Database: if0_42625217_db_findbackph
+User: if0_42625217
+Password: RfD9Vwu471lo
+
+## TEST PROCEDURE
+1. Import findbackph.sql to phpMyAdmin
+2. Upload api/*.php files
+3. Register new account on website
+4. Check phpMyAdmin -> users table
+5. New user SHOULD appear
+
+## WHAT REGISTRATION NOW DOES
+Form -> /api/register.php -> Validate -> bcrypt hash -> INSERT INTO MySQL users -> Success

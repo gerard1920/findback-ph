@@ -13,11 +13,11 @@ export async function GET(request: Request) {
         status: { in: ["ACTIVE", "MATCHED", "CLAIM_PENDING"] },
         ...(q ? {
           OR: [
-            { title: { contains: q, mode: "insensitive" } },
-            { description: { contains: q, mode: "insensitive" } },
+            { title: { contains: q.toLowerCase() } },
+            { description: { contains: q.toLowerCase() } },
           ],
         } : {}),
-        ...(city ? { city: { contains: city, mode: "insensitive" } } : {}),
+        ...(city ? { city: { contains: city.toLowerCase() } } : {}),
       },
       include: { 
         images: { take: 1 }, 

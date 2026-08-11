@@ -1,124 +1,129 @@
-import { requireUser } from "@/lib/auth";
-import { db } from "@/lib/db";
-import { redirect } from "next/navigation";
+export const dynamic = "force-dynamic";
+import { Suspense } from "react";
+import Link from "next/link";
+import { ShieldCheck, BarChart3, History } from "lucide-react";
 import { ItemStatus } from "@prisma/client";
-import { ConfirmButton } from "@/components/confirm-button";
-import { ShieldCheck } from "lucide-react";
-import { setRole, deleteUser } from "@/app/actions";
-import { AdminResetButton } from "@/components/admin-reset-button";
+import { requireAdmin } from "@/lib/admin";
+import { describeAdminAction } from "@/lib/admin";
+import { db } from "@/lib/db";
 
-const active: ItemStatus[] = ["ACTIVE", "MATCHED", "CLAIM_PENDING"];
-const roleLabel: Record<string, string> = { USER: "Member", ADMIN: "Admin", SUSPENDED: "Held" };
+const ACTIVE: ItemStatus[] = ["ACTIVE", "MATCHED", "CLAIM_PENDING"];
 
-export default async function Admin() {
-  const me = await requireUser();
-  if (me.role !== "ADMIN") redirect("/dashboard");
+type Stats = {
+  users: number;
+  admins: number;
+  bannedUsers: number;
+  suspendedUsers: number;
+  activeItems: number;
+  lostActive: number;
+  foundActive: number;
+  pendingReports: number;
+  totalReports: number;
+};
 
-  const [userCount, lost, found, reports, users, counts] = await Promise.all([
+async function loadStats(): Promise<Stats> {
+  const [
+    users,
+    admins,
+    bannedUsers,
+    suspendedUsers,
+    activeItems,
+    lostActive,
+    foundActive,
+    pendingReports,
+    totalReports,
+  ] = await Promise.all([
     db.user.count(),
-    db.item.count({ where: { type: "LOST", status: { in: active } } }),
-    db.item.count({ where: { type: "FOUND", status: { in: active } } }),
+    db.user.count({ where: { role: "ADMIN" } }),
+    db.user.count({ where: { status: "BANNED" } }),
+    db.user.count({ where: { status: "SUSPENDED" } }),
+    db.item.count({ where: { status: { in: ACTIVE } } }),
+    db.item.count({ where: { type: "LOST", status: { in: ACTIVE } } }),
+    db.item.count({ where: { type: "FOUND", status: { in: ACTIVE } } }),
     db.report.count({ where: { status: "PENDING" } }),
-    db.user.findMany({
-      select: { id: true, email: true, displayName: true, username: true, role: true, createdAt: true },
-      orderBy: { createdAt: "desc" },
-    }),
-    db.item.groupBy({ by: ["ownerId"], where: { status: { in: active } }, _count: true }),
+    db.report.count(),
   ]);
-    const reportCount: Record<string, number> = Object.fromEntries(counts.map((c) => [c.ownerId, Number(c._count ?? 0)]));
+  return { users, admins, bannedUsers, suspendedUsers, activeItems, lostActive, foundActive, pendingReports, totalReports };
+}
+
+async function loadLogs() {
+  return db.adminLog.findMany({
+    orderBy: { createdAt: "desc" },
+    take: 20,
+    select: {
+      id: true,
+      action: true,
+      targetType: true,
+      targetId: true,
+      reason: true,
+      createdAt: true,
+      admin: { select: { id: true, displayName: true, username: true } },
+    },
+  });
+}
+
+export default async function AdminHome() {
+  await requireAdmin();
+
+  const stats = await loadStats();
+  const logs = await loadLogs();
+
+  const statCards: Array<{ label: string; value: number; icon: React.ReactNode; href?: string }> = [
+    { label: "Total users", value: stats.users, icon: <ShieldCheck size={16} /> },
+    { label: "Administrators", value: stats.admins, icon: <ShieldCheck size={16} />, href: "/admin/users" },
+    { label: "Banned users", value: stats.bannedUsers, icon: <BarChart3 size={16} />, href: "/admin/users?status=BANNED" },
+    { label: "Suspended users", value: stats.suspendedUsers, icon: <BarChart3 size={16} />, href: "/admin/users?status=SUSPENDED" },
+    { label: "Active posts", value: stats.activeItems, icon: <BarChart3 size={16} />, href: "/admin/posts" },
+    { label: "Active lost", value: stats.lostActive, icon: <BarChart3 size={16} />, href: "/admin/posts?type=LOST" },
+    { label: "Active found", value: stats.foundActive, icon: <BarChart3 size={16} />, href: "/admin/posts?type=FOUND" },
+    { label: "Pending reports", value: stats.pendingReports, icon: <History size={16} />, href: "/admin/reports" },
+    { label: "Total reports", value: stats.totalReports, icon: <History size={16} />, href: "/admin/reports" },
+  ];
 
   return (
-    <main className="container-page py-10">
+    <div>
       <h1 className="text-3xl font-bold">Admin dashboard</h1>
-      <div className="mt-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {[
-          ["Total users", userCount],
-          ["Active lost reports", lost],
-          ["Active found reports", found],
-          ["Pending reports", reports],
-        ].map(([x, n]) => (
-          <div className="card p-5" key={String(x)}>
-            <p className="text-sm text-slate-600">{x}</p>
-            <p className="mt-1 text-3xl font-bold">{n}</p>
-          </div>
+      <p className="mt-1 text-sm text-slate-500">Moderation overview. Use the navigation above to manage users, posts, and reports.</p>
+
+      <h2 className="mt-8 text-xl font-bold">Statistics</h2>
+      <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
+        {statCards.map((c) => (
+          <Link key={c.label} href={c.href ?? "/admin"} className="card p-5 hover:bg-slate-50">
+            <div className="flex items-center gap-2 text-slate-500">{c.icon}<span className="text-sm">{c.label}</span></div>
+            <p className="mt-2 text-3xl font-bold">{c.value}</p>
+          </Link>
         ))}
       </div>
 
-      <h2 className="mt-10 text-xl font-bold">Accounts</h2>
-      <p className="mt-1 text-sm text-slate-500">
-        All registered accounts. Hold (suspend) / Restore / Make admin / Revoke admin / Delete.
-      </p>
-      <div className="mt-5 overflow-x-auto rounded-lg border">
-        <table className="min-w-full text-left text-sm">
-          <thead className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase">
-            <tr>
-              <th className="p-3">Member</th>
-              <th className="p-3">Email</th>
-                            <th className="p-3">Role</th>
-              <th className="p-3">Member since</th>
-              <th className="p-3 text-right">Active reports</th>
-              <th className="p-3 text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y">
-            {users.map((u) => (
-              <tr key={u.id} className={u.role === "SUSPENDED" ? "bg-slate-50/50" : ""}>
-                <td className="p-3">
-                  <div className="flex items-center gap-3">
-                    <span className="grid h-9 w-9 place-items-center rounded-full bg-blue-700 text-sm font-bold text-white">
-                      {(u.displayName.match(/\b\w/g) || []).slice(0, 2).join("").toUpperCase()}
-                    </span>
-                    <div>
-                      <p className="font-semibold">{u.displayName}</p>
-                      <p className="text-xs text-slate-500">@{u.username}</p>
-                    </div>
-                  </div>
-                </td>
-                <td className="p-3 text-slate-600">{u.email}</td>
-                <td className="p-3">
-                  <span
-                    className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold ${u.role === "ADMIN" ? "bg-amber-100 text-amber-800" : u.role === "SUSPENDED" ? "bg-red-100 text-red-800" : "bg-slate-100 text-slate-700"}`}
-                  >
-                    {u.role === "ADMIN" && <ShieldCheck size={12} />}
-                    {roleLabel[u.role as string]}
-                    {u.role === "ADMIN" && " (verified reporter)"}
-                  </span>
-                </td>
-                                <td className="p-3 text-slate-600">{new Date(u.createdAt).toLocaleDateString("en-PH", { month: "short", year: "numeric" })}</td>
-                <td className="p-3 text-right">{reportCount[u.id] ?? 0}</td>
-                <td className="p-3">
-                  <div className="flex justify-center gap-1">
-                    {u.role === "USER" && (
-                      <>
-                        <form action={setRole.bind(null, u.id, "SUSPENDED")}><button className="btn-secondary" title="Hold (suspend)">Hold</button></form>
-                        <form action={setRole.bind(null, u.id, "ADMIN")}><button className="btn-secondary" title="Make admin">Make admin</button></form>
-                      </>
-                    )}
-                    {u.role === "ADMIN" && (
-                      <>
-                        <form action={setRole.bind(null, u.id, "SUSPENDED")}><button className="btn-secondary" title="Hold">Hold</button></form>
-                        <form action={setRole.bind(null, u.id, "USER")}><button className="btn-secondary" title="Revoke admin">Revoke admin</button></form>
-                      </>
-                    )}
-                    {u.role === "SUSPENDED" && (
-                      <>
-                        <form action={setRole.bind(null, u.id, "USER")}><button className="btn-secondary" title="Restore">Restore</button></form>
-                        <form action={setRole.bind(null, u.id, "ADMIN")}><button className="btn-secondary" title="Make admin">Make admin</button></form>
-                      </>
-                    )}
-                                        <AdminResetButton userId={u.id} username={u.username} />
-                    <ConfirmButton action={deleteUser.bind(null, u.id)} label={u.displayName} />
-                  </div>
-                </td>
+      <h2 className="mt-10 text-xl font-bold">Recent activity</h2>
+      <p className="mt-1 text-sm text-slate-500">Latest administrator actions (last 20). A full ban history is available per user.</p>
+      <div className="mt-4 overflow-x-auto rounded-lg border">
+        {logs.length === 0 ? (
+          <p className="p-5 text-sm text-slate-500">No actions logged yet.</p>
+        ) : (
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-slate-50 text-xs font-semibold text-slate-500 uppercase">
+              <tr>
+                <th className="p-2">Time</th>
+                <th className="p-2">Action</th>
+                <th className="p-2">By</th>
+                <th className="p-2">Details</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody className="divide-y">
+              {logs.map((l) => (
+                <tr key={l.id}>
+                  <td className="p-2 text-slate-500">{l.createdAt.toLocaleString("en-PH", { dateStyle: "medium", timeStyle: "short" })}</td>
+                  <td className="p-2 font-medium">{l.action}</td>
+                  <td className="p-2 text-slate-600">{l.admin?.displayName ?? "System"}</td>
+                  <td className="p-2 text-slate-600">{describeAdminAction(l.action, l.targetType, l.targetId, l.reason)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </div>
-      {users.length === 0 && <p className="mt-5 text-sm text-slate-500">No accounts found.</p>}
-      <p className="mt-8 rounded-lg bg-slate-100 p-4 text-sm">
-        Administrative access is enforced on the server. User moderation is backed by the Report and User records.
-      </p>
-    </main>
+    </div>
   );
 }
+

@@ -1,23 +1,24 @@
 generator client {
   provider = "prisma-client-js"
 }
-
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
-
 enum Role {
   USER
   ADMIN
   SUSPENDED
 }
-
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+}
 enum ItemType {
   LOST
   FOUND
 }
-
 enum ItemStatus {
   ACTIVE
   MATCHED
@@ -26,7 +27,6 @@ enum ItemStatus {
   EXPIRED
   REMOVED
 }
-
 enum MatchStatus {
   PENDING
   CONTACTED
@@ -34,7 +34,6 @@ enum MatchStatus {
   REJECTED
   RESOLVED
 }
-
 enum ClaimStatus {
   PENDING
   UNDER_REVIEW
@@ -42,7 +41,6 @@ enum ClaimStatus {
   REJECTED
   CANCELLED
 }
-
 enum ReportReason {
   FAKE_LISTING
   SCAM
@@ -52,35 +50,49 @@ enum ReportReason {
   SPAM
   SUSPICIOUS
 }
-
 model User {
-  id             String          @id @default(uuid())
-  email          String          @unique
-  passwordHash   String
-  displayName    String
-  username       String          @unique
-  role           Role            @default(USER)
-  createdAt      DateTime        @default(now())
-  updatedAt      DateTime        @updatedAt
-  items          Item[]
-  savedItems     SavedItem[]
-  notifications  Notification[]
-  messages       Message[]
-  reportsMade    Report[]
-  blockedUsers   Block[]         @relation("Blocker")
-  blockedBy      Block[]         @relation("Blocked")
-  passwordResets PasswordReset[]
-
+  id                      String              @id @default(uuid())
+  email                   String              @unique
+  passwordHash            String
+  displayName             String
+  username                String              @unique
+  avatarUrl               String?
+  phoneNumber             String?
+  campus                  String?
+  preferredProvince       String?
+  preferredCity           String?
+  notifyOnCommentEmail    Boolean             @default(true)
+  notifyOnCommentInApp    Boolean             @default(true)
+  notifyOnClaimEmail      Boolean             @default(true)
+  notifyOnClaimInApp      Boolean             @default(true)
+  notifyOnMessageEmail    Boolean             @default(true)
+  notifyOnMessageInApp    Boolean             @default(true)
+  role                    Role                @default(USER)
+  status                  UserStatus          @default(ACTIVE)
+  createdAt               DateTime            @default(now())
+  updatedAt               DateTime            @updatedAt
+  items                   Item[]
+  savedItems              SavedItem[]
+  notifications           Notification[]
+  messages                Message[]
+  reportsMade             Report[]            @relation("ReportReporter")
+  reportsAboutMe          Report[]            @relation("ReportedUser")
+  blockedUsers            Block[]             @relation("Blocker")
+  blockedBy               Block[]             @relation("Blocked")
+  passwordResets          PasswordReset[]
+  bans                    Ban[]               @relation("BannedUser")
+  bansIssued              Ban[]               @relation("BanAdmin")
+  adminLogs               AdminLog[]          @relation("AdminLogAdmin")
+  claims                  Claim[]             @relation("Claimant")
+  claimReviews            Claim[]             @relation("ClaimReviewer")
   @@index([createdAt])
 }
-
 model Category {
   id    String @id @default(uuid())
   name  String @unique
   slug  String @unique
   items Item[]
 }
-
 model Item {
   id                     String      @id @default(uuid())
   ownerId                String
@@ -89,9 +101,11 @@ model Item {
   category               Category    @relation(fields: [categoryId], references: [id])
   type                   ItemType
   status                 ItemStatus  @default(ACTIVE)
+  flagged                Boolean     @default(false)
   title                  String
   brand                  String?
   color                  String?
+  serialNumber           String?
   description            String
   distinguishingFeatures String?
   privateSerial          String?
@@ -101,19 +115,22 @@ model Item {
   city                   String
   barangay               String?
   approximateLocation    String
+  latitude               Float?
+  longitude              Float?
   dateOccurred           DateTime
   images                 ItemImage[]
   savedBy                SavedItem[]
   claims                 Claim[]
   reports                Report[]
+  matchesLost            Match[]     @relation("MatchLostItem")
+  matchesFound           Match[]     @relation("MatchFoundItem")
+  conversations          Conversation[]
   createdAt              DateTime    @default(now())
   updatedAt              DateTime    @updatedAt
-
   @@index([type, status, createdAt])
   @@index([categoryId])
   @@index([province, city])
 }
-
 model ItemImage {
   id        String   @id @default(uuid())
   itemId    String
@@ -122,45 +139,44 @@ model ItemImage {
   alt       String?
   createdAt DateTime @default(now())
 }
-
 model Match {
   id          String      @id @default(uuid())
   lostItemId  String
   foundItemId String
+  lostItem    Item        @relation("MatchLostItem", fields: [lostItemId], references: [id])
+  foundItem   Item        @relation("MatchFoundItem", fields: [foundItemId], references: [id])
   score       Int
   status      MatchStatus @default(PENDING)
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
-
   @@unique([lostItemId, foundItemId])
   @@index([lostItemId])
   @@index([foundItemId])
 }
-
 model Claim {
   id                 String      @id @default(uuid())
   itemId             String
   item               Item        @relation(fields: [itemId], references: [id], onDelete: Cascade)
   claimantId         String
+  claimant           User        @relation("Claimant", fields: [claimantId], references: [id])
+  reviewerId         String?
+  reviewer           User?       @relation("ClaimReviewer", fields: [reviewerId], references: [id])
   verificationAnswer String
   status             ClaimStatus @default(PENDING)
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
-
   @@index([itemId, status])
 }
-
 model Conversation {
   id             String    @id @default(uuid())
   itemId         String?
+  item           Item?     @relation(fields: [itemId], references: [id], onDelete: SetNull)
   participantAId String
   participantBId String
   createdAt      DateTime  @default(now())
   messages       Message[]
-
   @@unique([itemId, participantAId, participantBId])
 }
-
 model Message {
   id             String       @id @default(uuid())
   conversationId String
@@ -170,10 +186,8 @@ model Message {
   body           String
   readAt         DateTime?
   createdAt      DateTime     @default(now())
-
   @@index([conversationId, createdAt])
 }
-
 model Notification {
   id        String    @id @default(uuid())
   userId    String
@@ -183,44 +197,40 @@ model Notification {
   link      String?
   readAt    DateTime?
   createdAt DateTime  @default(now())
-
   @@index([userId, readAt])
 }
-
 model SavedItem {
   userId    String
   itemId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   item      Item     @relation(fields: [itemId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-
   @@id([userId, itemId])
 }
-
 model Report {
-  id         String       @id @default(uuid())
-  itemId     String
-  item       Item         @relation(fields: [itemId], references: [id], onDelete: Cascade)
-  reporterId String
-  reporter   User         @relation(fields: [reporterId], references: [id])
-  reason     ReportReason
-  details    String?
-  status     String       @default("PENDING")
-  createdAt  DateTime     @default(now())
-
+  id             String       @id @default(uuid())
+  itemId         String?
+  item           Item?        @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  reporterId     String
+  reporter       User         @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
+  reportedUserId String?
+  reportedUser   User?        @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: Cascade)
+  reason         ReportReason
+  details        String?
+  status         String       @default("PENDING")
+  resolvedAt     DateTime?
+  resolvedBy     String?
+  createdAt      DateTime     @default(now())
   @@index([status, createdAt])
 }
-
 model Block {
   blockerId String
   blockedId String
   blocker   User     @relation("Blocker", fields: [blockerId], references: [id], onDelete: Cascade)
   blocked   User     @relation("Blocked", fields: [blockedId], references: [id], onDelete: Cascade)
   createdAt DateTime @default(now())
-
   @@id([blockerId, blockedId])
 }
-
 model PasswordReset {
   id        String    @id @default(uuid())
   tokenHash String    @unique
@@ -229,6 +239,32 @@ model PasswordReset {
   expiresAt DateTime
   createdAt DateTime  @default(now())
   usedAt    DateTime?
-
   @@index([expiresAt])
 }
+model Ban {
+  id        String    @id @default(uuid())
+  userId    String
+  user      User      @relation("BannedUser", fields: [userId], references: [id], onDelete: Cascade)
+  adminId   String?
+  admin     User?     @relation("BanAdmin", fields: [adminId], references: [id], onDelete: SetNull)
+  action    String // "BAN" | "SUSPEND" | "UNBAN"
+  reason    String
+  expiresAt DateTime?
+  liftedAt  DateTime?
+  createdAt DateTime  @default(now())
+  @@index([userId])
+  @@index([createdAt])
+}
+model AdminLog {
+  id         String   @id @default(uuid())
+  adminId    String?
+  admin      User?    @relation("AdminLogAdmin", fields: [adminId], references: [id], onDelete: SetNull)
+  action     String
+  targetType String
+  targetId   String?
+  reason     String?
+  createdAt  DateTime @default(now())
+  @@index([createdAt])
+  @@index([adminId])
+}
+

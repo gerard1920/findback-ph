@@ -1,4 +1,4 @@
-import { ItemType, PrismaClient } from "@prisma/client";
+import { ItemType, Role, PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 
 const db = new PrismaClient();
@@ -30,7 +30,8 @@ async function main() {
     });
   }
 
-  const hash = await bcrypt.hash("DemoPass123!", 12);
+    const hash = await bcrypt.hash("DemoPass123!", 12);
+
   const user = await db.user.upsert({
     where: { email: "demo@findback.local" },
     update: {},
@@ -39,6 +40,20 @@ async function main() {
       passwordHash: hash,
       displayName: "Demo User (development)",
       username: "findbackdemo",
+    },
+  });
+
+      // First administrator account (development bootstrap).
+  const adminHash = await bcrypt.hash("Admin@2024!", 12);
+  await db.user.upsert({
+    where: { email: "admin@findback.ph" },
+    update: { role: Role.ADMIN, status: "ACTIVE", passwordHash: adminHash, displayName: "FindBack Admin" },
+    create: {
+      email: "admin@findback.ph",
+      passwordHash: adminHash,
+      displayName: "FindBack Admin",
+      username: "findbackadmin",
+      role: Role.ADMIN,
     },
   });
 
@@ -54,8 +69,7 @@ async function main() {
           title: "Black iPhone 15",
           brand: "Apple",
           color: "Black",
-          description:
-            "Black case with a small sticker. Development seed data only.",
+          description: "Black case with a small sticker. Development seed data only.",
           province: "Metro Manila",
           city: "Quezon City",
           approximateLocation: "Near the public transport terminal",

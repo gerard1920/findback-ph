@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { activeUser } from "@/lib/auth";import { SuspendedNotice } from "@/components/suspended-notice";
 import { db } from "@/lib/db";
 import { reviewClaim } from "@/app/actions";
 
@@ -11,7 +11,9 @@ const statusStyles: Record<string, string> = {
 };
 
 export default async function Claims() {
-  const user = await requireUser();
+  const _a = await activeUser();
+  if (!_a.ok) return <SuspendedNotice reason={_a.reason} message={_a.message} />;
+  const user = _a.user;
   const claims = await db.claim.findMany({
     where: { item: { ownerId: user.id } },
     orderBy: { createdAt: "desc" },
@@ -36,7 +38,7 @@ export default async function Claims() {
               <article className="card p-5" key={c.id}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <b>{item?.title ?? "Item"}</b>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${statusStyles[c.status]}`}>{c.status}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold {statusStyles[c.status]}`}>{c.status}</span>
                 </div>
                 <p className="mt-1 text-sm text-slate-600">Claimant: {names.get(c.claimantId) ?? "User"}</p>
                 <p className="mt-3 whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-sm text-slate-700">“{c.verificationAnswer}”</p>
@@ -63,3 +65,4 @@ export default async function Claims() {
     </main>
   );
 }
+

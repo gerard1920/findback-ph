@@ -1,11 +1,14 @@
 import Link from "next/link";
-import { requireUser } from "@/lib/auth";
+import { activeUser } from "@/lib/auth";
+import { SuspendedNotice } from "@/components/suspended-notice";
 import { db } from "@/lib/db";
 import { ItemCard } from "@/components/item-card";
 import { unsaveItem } from "@/app/actions";
 
 export default async function SavedItems() {
-  const user = await requireUser();
+  const _a = await activeUser();
+  if (!_a.ok) return <SuspendedNotice reason={_a.reason} message={_a.message} />;
+  const user = _a.user;
   const saved = await db.savedItem.findMany({
     where: { userId: user.id },
     include: { item: { include: { images: { take: 1 }, category: true } } },

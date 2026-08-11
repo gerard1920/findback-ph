@@ -14,12 +14,12 @@ export async function GET(request: Request) {
       status: { in: ["ACTIVE", "MATCHED", "CLAIM_PENDING"] },
       ...(q ? {
         OR: [
-          { title: { contains: q, mode: "insensitive" } },
-          { description: { contains: q, mode: "insensitive" } },
-          { brand: { contains: q, mode: "insensitive" } },
+          { title: { contains: q.toLowerCase() } },
+          { description: { contains: q.toLowerCase() } },
+          { brand: { contains: q.toLowerCase() } },
         ],
       } : {}),
-      ...(city ? { city: { contains: city, mode: "insensitive" } } : {}),
+      ...(city ? { city: { contains: city.toLowerCase() } } : {}),
       ...(category ? { category: { name: category } } : {}),
     };
 

@@ -1,7 +1,17 @@
-import { notFound } from "next/navigation";import { db } from "@/lib/db";import { ItemCard } from "@/components/item-card";import { ShieldCheck } from "lucide-react";
+import { notFound } from "next/navigation";import { db } from "@/lib/db";import { currentUser } from "@/lib/auth";import { ItemCard } from "@/components/item-card";import { ReportUserForm } from "@/components/report-user-form";import { ShieldCheck, CheckCircle2 } from "lucide-react";
 
-export default async function UserProfile({ params }: { params: Promise<{ id: string }> }) {
+export const dynamic = "force-dynamic";
+
+export default async function UserProfile({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ reported?: string }>;
+}) {
   const { id } = await params;
+  const { reported = "" } = await searchParams;
+  const viewer = await currentUser();
   const user = await db.user.findUnique({
     where: { id },
     select: { id: true, displayName: true, username: true, role: true, createdAt: true },
@@ -47,6 +57,17 @@ export default async function UserProfile({ params }: { params: Promise<{ id: st
           </div>
         </div>
       </div>
+      {viewer && viewer.id !== user.id && (
+        <>
+          {reported === "1" && (
+            <div className="mt-3 mb-2 flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">
+              <CheckCircle2 size={16} />
+              <span>Your report was submitted and is awaiting review. Thank you.</span>
+            </div>
+          )}
+          <ReportUserForm targetUserId={user.id} />
+        </>
+      )}
       <h2 className="mt-8 text-xl font-bold">Active reports</h2>
       {items.length ? (
         <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">

@@ -21,6 +21,7 @@
     "clsx": "^2.1.1",
     "jose": "^5.10.0",
     "lucide-react": "^0.468.0",
+    "mysql2": "^3.23.3",
     "next": "^15.4.4",
     "nodemailer": "^9.0.5",
     "react": "^19.1.0",
@@ -31,7 +32,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^22.10.2",
-    "@types/react": "^19.0.2",
+    "@types/react": "19.2.18",
     "@types/react-dom": "^19.0.2",
     "autoprefixer": "^10.4.20",
     "eslint": "^9.17.0",
