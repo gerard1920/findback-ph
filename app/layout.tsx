@@ -74,6 +74,9 @@ export default async function RootLayout({
 }) {
   let user = null;
   try {
+    // The navbar's auth state is best-effort: if the database is temporarily
+    // unreachable (e.g. a serverless cold start), we render the site logged-out
+    // rather than blocking the entire page. Never gate the whole app on a DB check.
     user = await currentUser();
   } catch {
     user = null;

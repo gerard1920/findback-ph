@@ -56,3 +56,6 @@ tmp-*.mjs
 tmp-*.ts
 tmp-*.html
 profiledata.txt
+
+.vercel
+.env*

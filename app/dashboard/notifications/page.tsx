@@ -1,6 +1,7 @@
 import { activeUser } from "@/lib/auth";
 import { SuspendedNotice } from "@/components/suspended-notice";
 import { db } from "@/lib/db";
+import { isDatabaseAvailable } from "@/lib/db";
 import Link from "next/link";
 import { Bell, CheckCheck } from "lucide-react";
 
@@ -10,14 +11,34 @@ export default async function NotificationsPage() {
     return <SuspendedNotice reason={_a.reason} message={_a.message} />;
   }
   const u = _a.user;
-  const ns = await db.notification.findMany({
-    where: { userId: u.id },
-    orderBy: { createdAt: "desc" },
-  });
-  await db.notification.updateMany({
-    where: { userId: u.id, readAt: null },
-    data: { readAt: new Date() },
-  });
+
+  if (!(await isDatabaseAvailable())) {
+    return (
+      <main className="container-page max-w-3xl py-10">
+        <h1 className="text-3xl font-bold text-slate-900">Notifications</h1>
+        <p className="mt-2 text-slate-600">We can’t load notifications right now because the database is unavailable.</p>
+      </main>
+    );
+  }
+
+  let ns: { id: string; title: string; body: string; createdAt: Date; link: string | null }[] = [];
+  try {
+    ns = await db.notification.findMany({
+      where: { userId: u.id },
+      orderBy: { createdAt: "desc" },
+    });
+    await db.notification.updateMany({
+      where: { userId: u.id, readAt: null },
+      data: { readAt: new Date() },
+    });
+  } catch {
+    return (
+      <main className="container-page max-w-3xl py-10">
+        <h1 className="text-3xl font-bold text-slate-900">Notifications</h1>
+        <p className="mt-2 text-slate-600">We couldn’t load your notifications. Please try again later.</p>
+      </main>
+    );
+  }
 
   return (
     <main className="container-page max-w-3xl py-10">

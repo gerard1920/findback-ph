@@ -1,5 +1,6 @@
 import { activeUser } from "@/lib/auth";import { SuspendedNotice } from "@/components/suspended-notice";
 import { db } from "@/lib/db";
+import { isDatabaseAvailable } from "@/lib/db";
 import { reviewClaim } from "@/app/actions";
 
 const statusStyles: Record<string, string> = {
@@ -14,10 +15,30 @@ export default async function Claims() {
   const _a = await activeUser();
   if (!_a.ok) return <SuspendedNotice reason={_a.reason} message={_a.message} />;
   const user = _a.user;
-  const claims = await db.claim.findMany({
-    where: { item: { ownerId: user.id } },
-    orderBy: { createdAt: "desc" },
-  });
+
+  if (!(await isDatabaseAvailable())) {
+    return (
+      <main className="container-page max-w-3xl py-10">
+        <h1 className="text-3xl font-bold">Claims to review</h1>
+        <p className="mt-2 text-slate-600">We can’t load claims right now because the database is unavailable.</p>
+      </main>
+    );
+  }
+
+  let claims: { id: string; itemId: string; claimantId: string; verificationAnswer: string; status: string; createdAt: Date }[] = [];
+  try {
+    claims = await db.claim.findMany({
+      where: { item: { ownerId: user.id } },
+      orderBy: { createdAt: "desc" },
+    });
+  } catch {
+    return (
+      <main className="container-page max-w-3xl py-10">
+        <h1 className="text-3xl font-bold">Claims to review</h1>
+        <p className="mt-2 text-slate-600">We couldn’t load claims. Please try again later.</p>
+      </main>
+    );
+  }
   const itemIds = claims.map((c) => c.itemId);
   const [items, claimants] = await Promise.all([
     db.item.findMany({ where: { id: { in: itemIds } }, select: { id: true, title: true, status: true } }),

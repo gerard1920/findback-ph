@@ -2,6 +2,7 @@ export const dynamic = "force-dynamic";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { activeUser } from "@/lib/auth";
+import { isDatabaseAvailable } from "@/lib/db";
 import { db } from "@/lib/db";
 import { ItemCard, parseCardItem } from "@/components/item-card";
 import { SuspendedNotice } from "@/components/suspended-notice";
@@ -21,6 +22,15 @@ export default async function Dashboard() {
     return <SuspendedNotice reason={_a.reason} message={_a.message} />;
   }
   const user = _a.user;
+
+  if (!(await isDatabaseAvailable())) {
+    return (
+      <main className="container-page py-10">
+        <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
+        <p className="mt-2 text-slate-600">We can’t load your dashboard right now because the database is unavailable.</p>
+      </main>
+    );
+  }
 
   const [items, matches, saved, unread, claims] = await Promise.all([
     db.item.findMany({

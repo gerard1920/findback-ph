@@ -64,21 +64,25 @@ export async function register(_:FormState,fd:FormData):Promise<FormState>{
   redirect("/settings");
 }
 export async function login(_:FormState,fd:FormData):Promise<FormState>{
-  const raw=Object.fromEntries(fd);
-  const payload={
-    email:String(raw.email ?? raw.email_display ?? "").trim(),
-    password:String(raw.password ?? raw.password_display ?? ""),
-  };
-  const parsed=loginSchema.safeParse(payload);
-  if(!parsed.success)return{error:"Enter a valid email and password."};
-  const user=await db.user.findUnique({where:{email:parsed.data.email.toLowerCase()}});
-  if(!user||!await bcrypt.compare(parsed.data.password,user.passwordHash))return{error:"Incorrect email or password."};
-  if(user.role==="SUSPENDED"||user.status==="SUSPENDED"||user.status==="BANNED"){
-    const ban=await db.ban.findFirst({where:{userId:user.id,action:{in:["SUSPEND","BAN"]},liftedAt:null},orderBy:{createdAt:"desc"}});
-    return{error:`Your account has been suspended from Lost & Found.\n\nReason: ${ban?.reason??"No reason provided."}\n\nIf you believe this was a mistake, contact the administrator.`};
+  try {
+    const raw=Object.fromEntries(fd);
+    const payload={
+      email:String(raw.email ?? raw.email_display ?? "").trim(),
+      password:String(raw.password ?? raw.password_display ?? ""),
+    };
+    const parsed=loginSchema.safeParse(payload);
+    if(!parsed.success)return{error:"Enter a valid email and password."};
+    const user=await db.user.findUnique({where:{email:parsed.data.email.toLowerCase()}});
+    if(!user||!await bcrypt.compare(parsed.data.password,user.passwordHash))return{error:"Incorrect email or password."};
+    if(user.role==="SUSPENDED"||user.status==="SUSPENDED"||user.status==="BANNED"){
+      const ban=await db.ban.findFirst({where:{userId:user.id,action:{in:["SUSPEND","BAN"]},liftedAt:null},orderBy:{createdAt:"desc"}});
+      return{error:`Your account has been suspended from Lost & Found.\n\nReason: ${ban?.reason??"No reason provided."}\n\nIf you believe this was a mistake, contact the administrator.`};
+    }
+    await setSession(user.id);
+    return{success:"Welcome back! Redirecting…"};
+  } catch {
+    return { error: "We couldn’t sign you in right now. Please try again in a moment." };
   }
-  await setSession(user.id);
-  redirect("/dashboard");
 }
 export async function logout(){await clearSession();redirect("/")}
 export async function createItem(type:"LOST"|"FOUND",_:FormState,fd:FormData):Promise<FormState>{try{const user=await requireUser();const parsed=itemSchema.safeParse(Object.fromEntries(fd));if(!parsed.success)return{error:"Please complete all required fields correctly."};const files=fd.getAll("images").filter((v):v is File=>v instanceof File&&v.size>0);const allowed=new Set(["image/jpeg","image/png","image/webp"]);if(files.length>5)return{error:"You can upload a maximum of 5 images."};if(files.some(f=>f.size>5*1024*1024||!allowed.has(f.type))){return{error:"Images must be JPG, PNG, or WebP and no larger than 5 MB each."}}const data=parsed.data;const item=await db.item.create({data:{...data,type,ownerId:user.id,privateSerial:data.privateSerial||null,brand:data.brand||null,color:data.color||null,barangay:data.barangay||null,distinguishingFeatures:data.distinguishingFeatures||null,reward:data.reward||null,privateProof:data.privateProof||null}});if(files.length){const uploadDir=path.join(process.cwd(),"public","uploads");await mkdir(uploadDir,{recursive:true});const urls=await Promise.all(files.map(async file=>{const extension=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";const name=`${randomUUID()}.${extension}`;await writeFile(path.join(uploadDir,name),Buffer.from(await file.arrayBuffer()));return `/uploads/${name}`}));await db.itemImage.createMany({data:urls.map(url=>({itemId:item.id,url,alt:item.title}))})}await generateMatches(item.id);redirect(`/items/${item.id}`)}catch(err){if(err instanceof Error && err.message==="NEXT_REDIRECT")throw err;return{error:err instanceof Error?err.message:"Failed to create report."}}}
