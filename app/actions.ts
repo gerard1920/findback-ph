@@ -248,7 +248,7 @@ export async function adminHideItem(itemId: string, fd: FormData) {
   redirect("/admin/posts");
 }
 
-export async function adminRestoreItem(itemId: string, fd: FormData) {
+export async function adminRestoreItem(itemId: string, _fd: FormData) {
   const admin = await adminActor();
   await db.item.update({ where: { id: itemId }, data: { status: "ACTIVE" } });
   await logAdmin({ adminId: admin.id, action: "RESTORE_ITEM", targetType: "ITEM", targetId: itemId });
