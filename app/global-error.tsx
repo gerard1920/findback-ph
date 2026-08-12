@@ -1,5 +1,7 @@
 "use client";
 
+import Link from "next/link";
+
 export default function GlobalError({
   error,
   reset,
@@ -26,12 +28,12 @@ export default function GlobalError({
             >
               Try again
             </button>
-            <a
+            <Link
               href="/"
               className="rounded-xl border border-slate-200 px-5 py-3 text-sm font-bold text-slate-800 transition hover:bg-slate-50"
             >
               Go to homepage
-            </a>
+            </Link>
           </div>
           {error?.digest ? (
             <p className="mt-4 text-xs text-slate-400">Error reference: {error.digest}</p>
