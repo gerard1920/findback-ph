@@ -13,16 +13,23 @@ import { join } from "path";
 
 const db = new PrismaClient();
 
-// Export only tables that carry real user-facing data. Empty/derived tables
-// (Report, Block, PasswordReset, Ban, AdminLog) are intentionally skipped.
+// Export all tables that carry application data.
 const MODELS = [
   "category",
   "user",
   "item",
+  "itemImage",
   "conversation",
   "message",
   "notification",
   "savedItem",
+  "match",
+  "claim",
+  "report",
+  "block",
+  "passwordReset",
+  "ban",
+  "adminLog",
 ] as const;
 
 async function main() {
