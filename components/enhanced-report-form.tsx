@@ -63,6 +63,7 @@ export function EnhancedReportForm({
 }) {
   const [state, formAction, pending] = useActionState<FormState, FormData>(createItemReport, {});
   const [images, setImages] = useState<{ url: string; alt?: string }[]>([]);
+  const [uploadedImageUrls, setUploadedImageUrls] = useState<string[]>([]);
   const [province, setProvince] = useState<string>("");
   const [city, setCity] = useState<string>("");
   const [dateOccurred, setDateOccurred] = useState<string>(() => {
@@ -77,7 +78,7 @@ export function EnhancedReportForm({
 
   const citiesForProvince = useMemo(() => CITIES_BY_PROVINCE[province] ?? [], [province]);
 
-  function addImageFile(files: FileList | null) {
+  async function addImageFile(files: FileList | null) {
     if (!files || files.length === 0) return;
     const arr = Array.from(files)
       .filter(
@@ -85,11 +86,21 @@ export function EnhancedReportForm({
           ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(f.type) &&
           f.size <= 5 * 1024 * 1024
       )
-      .slice(0, 5 - images.length);
-    setImages((prev) => [
-      ...prev,
-      ...arr.map((f) => ({ url: URL.createObjectURL(f), alt: f.name })),
-    ]);
+      .slice(0, 5 - images.length - uploadedImageUrls.length);
+
+    if (!arr.length) return;
+
+    const form = new FormData();
+    arr.forEach((file) => form.append("files", file));
+    const res = await fetch("/api/upload", { method: "POST", body: form });
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}));
+      alert(data.error || "Upload failed.");
+      return;
+    }
+    const data = (await res.json()) as { urls: string[] };
+    setUploadedImageUrls((prev) => [...prev, ...data.urls]);
+    setImages((prev) => [...prev, ...data.urls.map((url) => ({ url, alt: "Uploaded image" }))]);
   }
 
   function addImageUrl(url: string) {
@@ -124,6 +135,9 @@ export function EnhancedReportForm({
     >
       <input type="hidden" name="type" value={type} />
       <input type="hidden" name="imageUrls" value={JSON.stringify(images.filter((i) => i.url.startsWith("http")).map((i) => i.url))} />
+      {uploadedImageUrls.map((url) => (
+        <input key={url} type="hidden" name="newImageUrls" value={url} />
+      ))}
       <input type="hidden" name="timeOccurred" value={timeOccurred} />
 
       <div className={`rounded-xl bg-gradient-to-br p-4 ring-1 ${banner.color}`}>
@@ -350,7 +364,6 @@ export function EnhancedReportForm({
               <input
                 ref={fileRef}
                 type="file"
-                name="images"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 multiple
                 onChange={(e) => addImageFile(e.target.files)}

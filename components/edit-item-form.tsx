@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useState } from "react";
+import { useActionState, useState, useTransition } from "react";
 import { updateItem, FormState } from "@/app/actions";
 
 const initialState: FormState = {};
@@ -36,11 +36,30 @@ export function EditItemForm({
   dateValue: string;
 }) {
   const [state, action, pending] = useActionState(updateItem.bind(null, item.id), initialState);
-  const [previews, setPreviews] = useState<string[]>([]);
+  const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
+  const [uploading, startUploading] = useTransition();
 
-  function handleImages(files: FileList | null) {
-    const selected = Array.from(files ?? []).slice(0, 5);
-    setPreviews(selected.map((file) => URL.createObjectURL(file)));
+  async function handleImages(files: FileList | null) {
+    if (!files?.length) return;
+    const selected = Array.from(files).slice(0, 5 - uploadedUrls.length);
+    if (!selected.length) return;
+
+    startUploading(async () => {
+      const form = new FormData();
+      selected.forEach((file) => form.append("files", file));
+      const res = await fetch("/api/upload", { method: "POST", body: form });
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}));
+        alert(data.error || "Upload failed.");
+        return;
+      }
+      const data = (await res.json()) as { urls: string[] };
+      setUploadedUrls((prev) => [...prev, ...data.urls]);
+    });
+  }
+
+  function removeUploadedUrl(url: string) {
+    setUploadedUrls((prev) => prev.filter((u) => u !== url));
   }
 
   return (
@@ -67,8 +86,35 @@ export function EditItemForm({
           </div>
         </div>
       )}
-      <label className="col-span-full"><span className="label">Add more photos (optional)</span><input name="images" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => handleImages(event.target.files)} /><span className="mt-2 block text-xs text-slate-500">Up to 5 JPG, PNG, or WebP images, 5 MB each.</span></label>
-      {previews.length > 0 && <div className="col-span-full grid grid-cols-2 gap-3 sm:grid-cols-5">{previews.map((src, i) => <Image key={src} src={src} alt={`New image ${i + 1}`} width={400} height={400} className="aspect-square w-full rounded-lg border border-slate-200 object-cover" />)}</div>}
+
+      <label className="col-span-full">
+        <span className="label">Add more photos (optional)</span>
+        <input
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          multiple
+          onChange={(event) => handleImages(event.target.files)}
+        />
+        <span className="mt-2 block text-xs text-slate-500">Up to 5 JPG, PNG, or WebP images, 5 MB each.</span>
+      </label>
+
+      {uploadedUrls.map((url) => (
+        <div key={url} className="relative">
+          <Image src={url} alt="New upload" width={400} height={400} className="aspect-square w-full rounded-lg border border-slate-200 object-cover" />
+          <button
+            type="button"
+            onClick={() => removeUploadedUrl(url)}
+            className="absolute right-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-white/95 text-rose-600 shadow-sm"
+            aria-label="Remove image"
+          >
+            ✕
+          </button>
+        </div>
+      ))}
+
+      {uploadedUrls.map((url) => (
+        <input key={url} type="hidden" name="newImageUrls" value={url} />
+      ))}
 
       <h2 className="col-span-full text-lg font-bold">Location & date</h2>
       <label><span className="label">Province *</span><input name="province" required defaultValue={item.province} /></label>
@@ -87,7 +133,7 @@ export function EditItemForm({
       {state.error && <p role="alert" className="col-span-full rounded-lg bg-red-50 p-3 text-sm text-red-700">{state.error}</p>}
       {state.success && <p role="alert" className="col-span-full rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800">{state.success}</p>}
       <div className="col-span-full flex flex-wrap gap-3">
-        <button className="btn-primary" disabled={pending}>{pending ? "Saving…" : "Save changes"}</button>
+        <button className="btn-primary" disabled={pending || uploading}>{pending || uploading ? "Saving…" : "Save changes"}</button>
         <a className="btn-secondary" href={`/items/${item.id}`}>Cancel</a>
       </div>
     </form>
