@@ -60,3 +60,4 @@ profiledata.txt
 .vercel
 .env*
 dev_server.txt
+local-data-export.json
