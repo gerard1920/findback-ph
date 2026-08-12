@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "tsx scripts/setup-db-provider.ts && prisma generate",
+    "prebuild": "tsx scripts/setup-db-provider.ts && prisma generate && prisma db push && tsx scripts/seed-categories.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
