@@ -4,12 +4,15 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "tsx scripts/setup-db-provider.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
-    "db:seed": "prisma db seed"
+    "db:seed": "prisma db seed",
+    "db:setup:local": "tsx scripts/setup-db-provider.ts && npx prisma migrate deploy && npx prisma db seed",
+    "db:setup:production": "DATABASE_URL=$DATABASE_URL tsx scripts/setup-db-provider.ts && npx prisma migrate deploy && npx prisma db seed"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
