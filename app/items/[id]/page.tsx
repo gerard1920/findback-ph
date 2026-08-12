@@ -296,17 +296,15 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
 
           <div className="mt-8">
             <h2 className="text-lg font-bold text-navy-900">Description</h2>
-            <p className="mt-2 whitespace-pre-wrap leading-relaxed text-slate-700">
-              {item.description}
-            </p>
+            <div className="mt-3 rounded-2xl border border-slate-200 bg-white p-5">
+              <p className="whitespace-pre-wrap leading-[1.8] text-slate-700">{item.description}</p>
+            </div>
           </div>
 
           {item.distinguishingFeatures && (
-            <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/70 p-4">
+            <div className="mt-6 rounded-2xl border border-amber-200 bg-amber-50/70 p-5">
               <h3 className="text-sm font-bold text-amber-900">Distinguishing marks</h3>
-              <p className="mt-1 text-sm whitespace-pre-wrap text-amber-900/90">
-                {item.distinguishingFeatures}
-              </p>
+              <p className="mt-2 whitespace-pre-wrap leading-[1.8] text-amber-900/90">{item.distinguishingFeatures}</p>
             </div>
           )}
 
