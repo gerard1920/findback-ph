@@ -46,7 +46,7 @@ export function parseCardItem(item: CardItemInput): CardItem {
   };
 }
 
-export function ItemCard({ item }: { item: CardItem }) {
+export function ItemCard({ item, mine }: { item: CardItem; mine?: boolean }) {
   const found = item.type === "FOUND";
   const router = useRouter();
   const { toast } = useToast();
@@ -157,7 +157,7 @@ export function ItemCard({ item }: { item: CardItem }) {
       <div className="p-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0">
-            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+            <span className="text-[11px] font-bold uppercase tracking-wider text-slate-500">
               {item.category.name}
             </span>
             <h3 className="mt-0.5 truncate text-base font-bold tracking-tight text-slate-900">
@@ -165,34 +165,37 @@ export function ItemCard({ item }: { item: CardItem }) {
             </h3>
           </div>
         </div>
-        <p className="mt-3 flex items-center gap-1 text-xs font-medium text-slate-600">
-          <MapPin size={13} className="text-slate-400" />
-          {item.city}, {item.province}
-        </p>
-        <p className="mt-1 flex items-center gap-1 text-xs font-medium text-slate-500">
-          <CalendarDays size={13} className="text-slate-400" />
-          {item.dateOccurred.toLocaleDateString("en-PH", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-          })}
-        </p>
+        <div className="mt-3 space-y-1.5">
+          <p className="flex items-center gap-1.5 text-xs font-medium text-slate-600">
+            <MapPin size={13} className="text-slate-400" />
+            {item.city}, {item.province}
+          </p>
+          <p className="flex items-center gap-1.5 text-xs font-medium text-slate-500">
+            <CalendarDays size={13} className="text-slate-400" />
+            {item.dateOccurred.toLocaleDateString("en-PH", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+            })}
+          </p>
+        </div>
         <p className="mt-3 line-clamp-2 text-sm leading-relaxed text-slate-600">
           {item.description}
         </p>
-        <div className="mt-4 grid grid-cols-[1fr_auto_auto] gap-2">
+        <div className="mt-4 flex items-center gap-2">
           <Link
             href={`/items/${item.id}`}
-            className="btn-secondary inline-flex items-center justify-center gap-1.5 py-2.5 text-sm"
+            className="btn-primary inline-flex flex-1 items-center justify-center gap-1.5 py-2.5 text-sm"
           >
-            View <ExternalLink size={14} />
+            View Details
+            <ExternalLink size={14} />
           </Link>
           <button
             type="button"
             onClick={toggleSave}
             disabled={saving}
             title={saved ? "Remove from saved" : "Save this item"}
-            className={`inline-flex h-10 w-10 items-center justify-center rounded-xl transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.97] disabled:opacity-70 ${
+            className={`inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.97] disabled:opacity-70 ${
               saved
                 ? "bg-indigo-50 text-indigo-700 ring-1 ring-indigo-200"
                 : "bg-slate-50 text-slate-600 ring-1 ring-slate-200 hover:bg-slate-100"
@@ -207,16 +210,18 @@ export function ItemCard({ item }: { item: CardItem }) {
               <Bookmark size={16} />
             )}
           </button>
-          <button
-            type="button"
-            onClick={markRecovered}
-            disabled={recovering}
-            title={found ? "Mark as returned" : "Mark as recovered"}
-            className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-100 active:scale-[0.97] disabled:opacity-70"
-            aria-label="Mark as recovered"
-          >
-            {recovering ? <Spinner size="xs" /> : <RotateCcw size={16} />}
-          </button>
+          {mine && (
+            <button
+              type="button"
+              onClick={markRecovered}
+              disabled={recovering}
+              title={found ? "Mark as returned" : "Mark as recovered"}
+              className="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200 transition-all duration-200 hover:-translate-y-0.5 hover:bg-emerald-100 active:scale-[0.97] disabled:opacity-70"
+              aria-label="Mark as recovered"
+            >
+              {recovering ? <Spinner size="xs" /> : <RotateCcw size={16} />}
+            </button>
+          )}
         </div>
       </div>
     </article>

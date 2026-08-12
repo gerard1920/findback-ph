@@ -74,6 +74,7 @@ export function SettingsTabs(props: SettingsTabsProps) {
             </div>
             <ProfileForm
               initial={{
+                email: props.initialUser.email,
                 displayName: props.initialUser.displayName,
                 phone: props.initialUser.phoneNumber ?? "",
                 city: props.initialUser.preferredCity ?? "",

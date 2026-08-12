@@ -5,7 +5,7 @@ import { ItemCard, parseCardItem, type CardItemInput } from "@/components/item-c
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AutoRefreshItems } from "@/components/auto-refresh-items";
-import { Search, MapPin, SortAsc, X, Loader2 } from "lucide-react";
+import { Search, MapPin, X, Loader2, SlidersHorizontal } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { Spinner } from "@/components/ui/spinner";
 
@@ -84,12 +84,11 @@ export default function FoundClient() {
         if (query) sp.set("q", query);
         if (c) sp.set("city", c);
         if (cat) sp.set("category", cat);
-        sp.set("type", "FOUND");
-        const res = await fetch(`/api/items.php?${sp.toString()}`);
+        const res = await fetch(`/api/items/found?${sp.toString()}`, { cache: "no-store" });
         if (res.ok) {
           const d = await res.json();
-          setItems(d.data?.items ?? []);
-          setCats((d.data?.categories as Category[] | undefined) ?? DEFAULT_CATS);
+          setItems(d.items ?? []);
+          setCats((d.cats as Category[] | undefined) ?? DEFAULT_CATS);
         } else {
           setCats(DEFAULT_CATS);
         }
@@ -166,11 +165,10 @@ export default function FoundClient() {
     if (initialQ) sp.set("q", initialQ);
     if (initialCity) sp.set("city", initialCity);
     if (initialCat) sp.set("category", initialCat);
-    sp.set("type", "FOUND");
-    const res = await fetch(`/api/items.php?${sp.toString()}`);
+    const res = await fetch(`/api/items/found?${sp.toString()}`, { cache: "no-store" });
     if (res.ok) {
       const d = await res.json();
-      setItems(d.data?.items ?? []);
+      setItems(d.items ?? []);
       setNewItemsCount(0);
       setShowNotification(false);
     }
@@ -188,27 +186,31 @@ export default function FoundClient() {
 
       <div className="flex flex-wrap items-start justify-between gap-4">
         <div>
-          <span className="eyebrow eyebrow--emerald">💙 Found items</span>
-          <h1 className="mt-2 text-3xl font-extrabold tracking-tight sm:text-4xl">
-            Reunite something you picked up
+          <span className="eyebrow">Found items</span>
+          <h1 className="mt-2 text-3xl font-extrabold tracking-tight text-navy-900 sm:text-4xl">
+            Browse found items
           </h1>
           <p className="mt-2 max-w-2xl text-slate-600">
-            Browse items turned in by our community. Filter by category and location, then help verify the real owner.
+            Search by keyword, location, or category. Open any item to view details or contact the poster.
           </p>
         </div>
-        {showNotification && (
-          <button
-            onClick={refresh}
-            className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-lg shadow-emerald-600/30 transition hover:-translate-y-0.5 hover:bg-emerald-700 active:scale-[0.97]"
-          >
-            <Loader2 size={15} className="animate-spin" />
-            {newItemsCount} new {newItemsCount === 1 ? "post" : "posts"} — refresh
-          </button>
-        )}
+        <div className="flex items-center gap-2">
+          {showNotification && (
+            <button
+              onClick={refresh}
+              className="inline-flex items-center gap-2 rounded-full bg-emerald-600 px-4 py-2 text-sm font-bold text-white shadow-sm transition hover:bg-emerald-700 active:scale-[0.97]"
+            >
+              <Loader2 size={15} className="animate-spin" />
+              {newItemsCount} new
+            </button>
+          )}
+          <Link href="/report/found" className="btn-found inline-flex items-center gap-1.5 px-4 py-2 text-sm">
+            Report found item
+          </Link>
+        </div>
       </div>
 
-      {/* Search + sort bar */}
-      <div className="mt-8 grid gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm lg:grid-cols-[1.4fr_1fr_auto_auto]">
+      <div className="mt-8 grid gap-3 lg:grid-cols-[1.4fr_1fr_auto_auto]">
         <label className="relative block">
           <span className="sr-only">Search found items</span>
           <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -216,22 +218,9 @@ export default function FoundClient() {
             value={q}
             onChange={(e) => setQ(e.target.value)}
             onBlur={applyToUrl}
-            placeholder="Phone, wallet, ID, keys…"
+            placeholder="Search found phones, wallets, IDs..."
             className="pl-10"
           />
-          {q && (
-            <button
-              type="button"
-              onClick={() => {
-                setQ("");
-                applyToUrl();
-              }}
-              className="absolute right-2 top-1/2 grid h-7 w-7 -translate-y-1/2 place-items-center rounded-full text-slate-400 transition hover:bg-slate-100 hover:text-slate-700"
-              aria-label="Clear search"
-            >
-              <X size={14} />
-            </button>
-          )}
         </label>
         <label className="relative block">
           <span className="sr-only">Location</span>
@@ -240,33 +229,25 @@ export default function FoundClient() {
             value={city}
             onChange={(e) => setCity(e.target.value)}
             onBlur={applyToUrl}
-            placeholder="Quezon City, Cebu, Davao…"
+            placeholder="City or province"
             className="pl-10"
           />
         </label>
-        <div className="flex items-center gap-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2">
-          <SortAsc size={15} className="text-slate-500" />
-          <select
-            value={sort}
-            onChange={(e) => {
-              const next = e.target.value as SortId;
-              setSort(next);
-              toast({
-                variant: "info",
-                title: "Updated",
-                description: `Sorted by ${SORTS.find((s) => s.id === next)?.label}.`,
-                durationMs: 1500,
-              });
-            }}
-            className="flex-1 bg-transparent p-0 text-sm font-semibold text-slate-800 focus:ring-0 border-0 shadow-none"
-          >
-            {SORTS.map((s) => (
-              <option key={s.id} value={s.id}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-        </div>
+        <select
+          value={sort}
+          onChange={(e) => {
+            const next = e.target.value as SortId;
+            setSort(next);
+            toast({ variant: "info", title: "Updated", description: `Sorted by ${SORTS.find((s) => s.id === next)?.label}.`, durationMs: 1400 });
+          }}
+          className="h-[46px] rounded-xl border border-slate-200 bg-white px-3 text-sm font-semibold text-slate-800 shadow-sm"
+        >
+          {SORTS.map((s) => (
+            <option key={s.id} value={s.id}>
+              {s.label}
+            </option>
+          ))}
+        </select>
         <div className="flex gap-2">
           <button
             type="button"
@@ -274,7 +255,7 @@ export default function FoundClient() {
             className="lg:hidden btn-secondary inline-flex items-center gap-1.5 justify-center"
             aria-expanded={filterOpen}
           >
-            <X size={15} /> Filters
+            <SlidersHorizontal size={15} /> Filters
           </button>
           <button type="button" onClick={resetFilters} className="btn-ghost inline-flex items-center justify-center gap-1.5" title="Clear filters">
             <X size={15} /> Reset
@@ -282,7 +263,6 @@ export default function FoundClient() {
         </div>
       </div>
 
-      {/* Category chips */}
       <div className={`mt-4 flex flex-wrap items-center gap-2 ${filterOpen ? "block" : "hidden lg:flex"}`}>
         <button
           type="button"
@@ -290,9 +270,9 @@ export default function FoundClient() {
             setActiveCat("");
             applyToUrl();
           }}
-          className={`rounded-full px-4 py-2 text-sm font-bold transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.97] ${
+          className={`rounded-full px-4 py-2 text-sm font-bold transition-all duration-200 ${
             !activeCat
-              ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 ring-1 ring-white/20"
+              ? "bg-emerald-600 text-white shadow-sm"
               : "bg-white text-slate-700 ring-1 ring-slate-200 hover:ring-slate-300"
           }`}
         >
@@ -306,9 +286,9 @@ export default function FoundClient() {
               setActiveCat((cur) => (cur === c.name ? "" : c.name));
               applyToUrl();
             }}
-            className={`rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 hover:-translate-y-0.5 active:scale-[0.97] ${
+            className={`rounded-full px-4 py-2 text-sm font-semibold transition-all duration-200 ${
               activeCat === c.name
-                ? "bg-emerald-600 text-white shadow-md shadow-emerald-600/20 ring-1 ring-white/20"
+                ? "bg-emerald-600 text-white shadow-sm"
                 : "bg-white text-slate-700 ring-1 ring-slate-200 hover:ring-slate-300"
             }`}
           >
@@ -317,12 +297,11 @@ export default function FoundClient() {
         ))}
       </div>
 
-      {/* Result count */}
       <div className="mt-6 flex flex-wrap items-center gap-3 border-b border-slate-100 pb-3 text-sm">
         <span className="inline-flex items-center gap-2 rounded-full bg-slate-50 px-3 py-1 font-bold text-slate-700 ring-1 ring-slate-200">
           {loading ? (
             <>
-              <Spinner size="xs" /> Loading matches…
+              <Spinner size="xs" /> Loading…
             </>
           ) : (
             <>
@@ -334,7 +313,7 @@ export default function FoundClient() {
         </span>
         {activeCat && (
           <span className="inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-xs font-bold text-emerald-800 ring-1 ring-emerald-200">
-            Category: {activeCat}
+            {activeCat}
             <button
               type="button"
               onClick={() => {
@@ -347,12 +326,6 @@ export default function FoundClient() {
             </button>
           </span>
         )}
-        <Link
-          href="/report/found"
-          className="btn-primary btn-emerald ml-auto inline-flex items-center gap-1.5 px-4 py-2 text-sm"
-        >
-          💙 Post a found item
-        </Link>
       </div>
 
       {loading ? (
@@ -364,7 +337,7 @@ export default function FoundClient() {
       ) : filtered.length ? (
         <div className="mt-6 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {filtered.map((i) => (
-            <ItemCard item={parseCardItem(i)} key={i.id} />
+            <ItemCard item={parseCardItem(i)} mine={false} key={i.id} />
           ))}
         </div>
       ) : (
@@ -372,7 +345,7 @@ export default function FoundClient() {
           <div className="mx-auto mb-4 grid h-16 w-16 place-items-center rounded-2xl bg-emerald-50 text-emerald-600 ring-1 ring-emerald-100">
             <Search size={26} />
           </div>
-          <h2 className="text-lg font-extrabold text-slate-900">No matching found items</h2>
+          <h2 className="text-lg font-extrabold text-navy-900">No matching found items</h2>
           <p className="mt-2 text-sm text-slate-600">
             Try removing filters or reporting a new found item so owners can find you.
           </p>
@@ -380,7 +353,7 @@ export default function FoundClient() {
             <button onClick={resetFilters} className="btn-secondary px-4 py-2 text-sm">
               Clear filters
             </button>
-            <Link href="/report/found" className="btn-primary btn-emerald px-4 py-2 text-sm">
+            <Link href="/report/found" className="btn-found px-4 py-2 text-sm">
               Post a found item
             </Link>
           </div>

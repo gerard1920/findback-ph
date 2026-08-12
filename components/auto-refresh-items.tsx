@@ -41,10 +41,10 @@ export function AutoRefreshItems({
     // Poll for new items
     intervalRef.current = setInterval(async () => {
       try {
-        const response = await fetch("/api/items.php?count=1");
+        const response = await fetch("/api/items/count", { cache: "no-store" });
         if (response.ok) {
           const data = await response.json();
-          const currentCount = data.data?.count || 0;
+          const currentCount = data.count || 0;
 
           // Check if there are new items
           if (previousCountRef.current > 0 && currentCount > previousCountRef.current) {

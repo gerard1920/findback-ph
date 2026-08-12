@@ -30,6 +30,13 @@ export const metadata: Metadata = {
     "FindBack PH",
     "lost items PH",
   ],
+  icons: {
+    icon: [
+      { url: "/favicon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+    shortcut: [{ url: "/favicon.svg" }],
+  },
   openGraph: {
     title: "FindBack PH — Get back what you lost.",
     description:
@@ -37,13 +44,21 @@ export const metadata: Metadata = {
     type: "website",
     locale: "en_PH",
     siteName: "FindBack PH",
+    images: [
+      {
+        url: "/brand/logo-hero.jpg",
+        width: 1600,
+        height: 900,
+        alt: "FindBack PH — Lost and Found Philippines",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "FindBack PH — Lost & Found Philippines",
     description: "Report lost and found items. AI matching. Private verification. Safe returns.",
+    images: ["/brand/logo-hero.jpg"],
   },
-  icons: { icon: "/favicon.svg" },
   robots: { index: true, follow: true },
 };
 
@@ -76,7 +91,7 @@ export default async function RootLayout({
     : null;
 
   return (
-    <html lang="en" className={inter.variable}>
+    <html lang="en" className={inter.variable} data-scroll-behavior="smooth">
       <body className="min-h-screen bg-white font-sans text-slate-900 antialiased [font-feature-settings:'cv11','ss01'] selection:bg-indigo-100 selection:text-indigo-900">
         <Providers>
           <Navbar user={navbarUser} />
@@ -89,12 +104,48 @@ export default async function RootLayout({
           />
           <div className="container-page flex flex-col items-start justify-between gap-10 py-16 text-sm md:flex-row md:items-center">
             <div className="max-w-md">
-              <div className="flex items-center gap-2">
-                <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-indigo-600 via-violet-600 to-fuchsia-600 text-sm font-black text-white shadow-lg shadow-indigo-200">
-                  FB
-                </span>
+              <div className="flex items-center gap-2.5">
+                <svg
+                  viewBox="0 0 40 40"
+                  className="h-9 w-9 drop-shadow-[0_4px_10px_rgba(30,58,138,0.18)]"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden
+                >
+                  <defs>
+                    <linearGradient id="ft-ic-bg" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#0b2a6b" />
+                      <stop offset="55%" stopColor="#1e40af" />
+                      <stop offset="100%" stopColor="#2563eb" />
+                    </linearGradient>
+                    <linearGradient id="ft-ic-ring" x1="0" y1="0" x2="1" y2="1">
+                      <stop offset="0%" stopColor="#93c5fd" />
+                      <stop offset="100%" stopColor="#3b82f6" />
+                    </linearGradient>
+                  </defs>
+                  <rect x="0.5" y="0.5" width="39" height="39" rx="11" fill="url(#ft-ic-bg)" />
+                  <circle cx="17" cy="17" r="8.2" fill="none" stroke="url(#ft-ic-ring)" strokeWidth="2.4" />
+                  <circle cx="17" cy="17" r="4.6" fill="#fbbf24" />
+                  <g fill="#facc15">
+                    <circle cx="17" cy="9.5" r="1.1" />
+                    <circle cx="17" cy="24.5" r="1.1" />
+                    <circle cx="9.5" cy="17" r="1.1" />
+                    <circle cx="24.5" cy="17" r="1.1" />
+                    <circle cx="11.8" cy="11.8" r="0.85" />
+                    <circle cx="22.2" cy="11.8" r="0.85" />
+                    <circle cx="11.8" cy="22.2" r="0.85" />
+                    <circle cx="22.2" cy="22.2" r="0.85" />
+                  </g>
+                  <path d="M22.4 22.4 L31 32.2" stroke="#0ea5e9" strokeWidth="3" strokeLinecap="round" />
+                  <circle cx="31" cy="32.2" r="2" fill="#dc2626" />
+                </svg>
                 <span className="text-xl font-extrabold tracking-tight text-slate-900">
-                  FindBack <span className="text-indigo-700">PH</span>
+                  FindBack{" "}
+                  <span className="relative font-black">
+                    <span className="bg-clip-text text-transparent bg-gradient-to-r from-[#1e40af] via-[#2563eb] to-[#7c3aed]">
+                      PH
+                    </span>
+                    <span className="absolute -bottom-0.5 left-0 h-[3px] w-full rounded-full bg-gradient-to-r from-[#fbbf24] via-[#dc2626] to-[#1e40af]" />
+                  </span>
                 </span>
               </div>
               <p className="mt-4 leading-relaxed text-slate-600">

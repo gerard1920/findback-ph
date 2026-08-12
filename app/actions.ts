@@ -5,7 +5,7 @@ import { mkdir, writeFile } from "fs/promises";
 import path from "path";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
-import { authSchema, itemSchema } from "@/lib/validation";
+import { loginSchema, registerSchema, itemSchema } from "@/lib/validation";
 import { z } from "zod";
 import { clearSession, currentUser, requireUser, setSession } from "@/lib/auth";
 import { generateMatches } from "@/lib/matching";
@@ -14,17 +14,97 @@ import { sendPasswordResetEmail, isAnyEmailConfigured, shouldExposeResetLink } f
 import { logAdmin } from "@/lib/admin";
 import type { ReportReason } from "@prisma/client";
 export type FormState={error?:string;success?:string};
-export async function register(_:FormState,fd:FormData):Promise<FormState>{const parsed=authSchema.safeParse(Object.fromEntries(fd));if(!parsed.success||!parsed.data.displayName)return{error:"Enter a valid name, email, and password (8+ characters)."};const email=parsed.data.email.toLowerCase();const username=email.split("@")[0].replace(/[^a-z0-9]/g,"").slice(0,16)+Math.floor(Math.random()*9999);try{const user=await db.user.create({data:{email,passwordHash:await bcrypt.hash(parsed.data.password,12),displayName:parsed.data.displayName,username}});await setSession(user.id)}catch{return{error:"An account already exists with that email."}}redirect("/dashboard")}
-export async function login(_:FormState,fd:FormData):Promise<FormState>{const parsed=authSchema.safeParse(Object.fromEntries(fd));if(!parsed.success)return{error:"Enter a valid email and password."};const user=await db.user.findUnique({where:{email:parsed.data.email.toLowerCase()}});if(!user||!await bcrypt.compare(parsed.data.password,user.passwordHash))return{error:"Incorrect email or password."};if(user.role==="SUSPENDED"||user.status==="SUSPENDED"||user.status==="BANNED"){const ban=await db.ban.findFirst({where:{userId:user.id,action:{in:["SUSPEND","BAN"]},liftedAt:null},orderBy:{createdAt:"desc"}});return{error:`Your account has been suspended from Lost & Found.\n\nReason: ${ban?.reason??"No reason provided."}\n\nIf you believe this was a mistake, contact the administrator.`}}await setSession(user.id);redirect("/dashboard")}
+export async function register(_:FormState,fd:FormData):Promise<FormState>{
+  const raw=Object.fromEntries(fd);
+  const normalizeOpt = (v: unknown) => {
+    const s = String(v ?? "").trim();
+    return s.length > 0 ? s : undefined;
+  };
+  const payload={
+    email:String(raw.email ?? raw.email_display ?? "").trim(),
+    password:String(raw.password ?? raw.password_display ?? ""),
+    displayName:String(raw.displayName ?? raw.name ?? raw.name_display ?? "").trim(),
+    phoneNumber:normalizeOpt(raw.phoneNumber ?? raw.phone),
+    campus:normalizeOpt(raw.campus),
+    preferredCity:normalizeOpt(raw.preferredCity ?? raw.city),
+    preferredProvince:normalizeOpt(raw.preferredProvince ?? raw.province),
+  };
+  const parsed=registerSchema.safeParse(payload);
+  if(!parsed.success){
+    const issues=parsed.error.issues.map(i=>{
+      const field=i.path[0];
+      const msg=i.message;
+      if(field==="email"&&msg.toLowerCase().includes("email"))return"Enter a valid email address.";
+      if(field==="password"&&msg.includes("at least 8"))return"Password must be at least 8 characters.";
+      if(field==="password"&&msg.includes("72"))return"Password must be 72 characters or less.";
+      if(field==="displayName"&&msg.includes("at least 2"))return"Your name needs at least 2 characters.";
+      if(field==="displayName"&&msg.includes("60"))return"Your name is too long (max 60 characters).";
+      if(field==="phoneNumber")return msg || "Use a valid PH number (09171234567).";
+      return msg;
+    });
+    return{error:issues[0]??"Please check your details and try again."};
+  }
+  const email=parsed.data.email.toLowerCase();
+  const username=email.split("@")[0].replace(/[^a-z0-9]/g,"").slice(0,16)+Math.floor(Math.random()*9999);
+  try{
+    const user=await db.user.create({data:{
+      email,
+      passwordHash:await bcrypt.hash(parsed.data.password,12),
+      displayName:parsed.data.displayName,
+      username,
+      phoneNumber:parsed.data.phoneNumber ?? null,
+      campus:parsed.data.campus ?? null,
+      preferredCity:parsed.data.preferredCity ?? null,
+      preferredProvince:parsed.data.preferredProvince ?? null,
+    }});
+    await setSession(user.id);
+  }catch{
+    return{error:"An account already exists with that email."};
+  }
+  redirect("/settings");
+}
+export async function login(_:FormState,fd:FormData):Promise<FormState>{
+  const raw=Object.fromEntries(fd);
+  const payload={
+    email:String(raw.email ?? raw.email_display ?? "").trim(),
+    password:String(raw.password ?? raw.password_display ?? ""),
+  };
+  const parsed=loginSchema.safeParse(payload);
+  if(!parsed.success)return{error:"Enter a valid email and password."};
+  const user=await db.user.findUnique({where:{email:parsed.data.email.toLowerCase()}});
+  if(!user||!await bcrypt.compare(parsed.data.password,user.passwordHash))return{error:"Incorrect email or password."};
+  if(user.role==="SUSPENDED"||user.status==="SUSPENDED"||user.status==="BANNED"){
+    const ban=await db.ban.findFirst({where:{userId:user.id,action:{in:["SUSPEND","BAN"]},liftedAt:null},orderBy:{createdAt:"desc"}});
+    return{error:`Your account has been suspended from Lost & Found.\n\nReason: ${ban?.reason??"No reason provided."}\n\nIf you believe this was a mistake, contact the administrator.`};
+  }
+  await setSession(user.id);
+  redirect("/dashboard");
+}
 export async function logout(){await clearSession();redirect("/")}
-export async function createItem(type:"LOST"|"FOUND",_:FormState,fd:FormData):Promise<FormState>{const user=await requireUser();const parsed=itemSchema.safeParse(Object.fromEntries(fd));if(!parsed.success)return{error:"Please complete all required fields correctly."};const files=fd.getAll("images").filter((v):v is File=>v instanceof File&&v.size>0);const allowed=new Set(["image/jpeg","image/png","image/webp"]);if(files.length>5)return{error:"You can upload a maximum of 5 images."};if(files.some(f=>f.size>5*1024*1024||!allowed.has(f.type)))return{error:"Images must be JPG, PNG, or WebP and no larger than 5 MB each."};const data=parsed.data;const item=await db.item.create({data:{...data,type,ownerId:user.id,privateSerial:data.privateSerial||null,brand:data.brand||null,color:data.color||null,barangay:data.barangay||null,distinguishingFeatures:data.distinguishingFeatures||null,reward:data.reward||null,privateProof:data.privateProof||null}});if(files.length){const uploadDir=path.join(process.cwd(),"public","uploads");await mkdir(uploadDir,{recursive:true});const urls=await Promise.all(files.map(async file=>{const extension=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";const name=`${randomUUID()}.${extension}`;await writeFile(path.join(uploadDir,name),Buffer.from(await file.arrayBuffer()));return `/uploads/${name}`}));await db.itemImage.createMany({data:urls.map(url=>({itemId:item.id,url,alt:item.title}))})}await generateMatches(item.id);redirect(`/items/${item.id}`)}
+export async function createItem(type:"LOST"|"FOUND",_:FormState,fd:FormData):Promise<FormState>{try{const user=await requireUser();const parsed=itemSchema.safeParse(Object.fromEntries(fd));if(!parsed.success)return{error:"Please complete all required fields correctly."};const files=fd.getAll("images").filter((v):v is File=>v instanceof File&&v.size>0);const allowed=new Set(["image/jpeg","image/png","image/webp"]);if(files.length>5)return{error:"You can upload a maximum of 5 images."};if(files.some(f=>f.size>5*1024*1024||!allowed.has(f.type))){return{error:"Images must be JPG, PNG, or WebP and no larger than 5 MB each."}}const data=parsed.data;const item=await db.item.create({data:{...data,type,ownerId:user.id,privateSerial:data.privateSerial||null,brand:data.brand||null,color:data.color||null,barangay:data.barangay||null,distinguishingFeatures:data.distinguishingFeatures||null,reward:data.reward||null,privateProof:data.privateProof||null}});if(files.length){const uploadDir=path.join(process.cwd(),"public","uploads");await mkdir(uploadDir,{recursive:true});const urls=await Promise.all(files.map(async file=>{const extension=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";const name=`${randomUUID()}.${extension}`;await writeFile(path.join(uploadDir,name),Buffer.from(await file.arrayBuffer()));return `/uploads/${name}`}));await db.itemImage.createMany({data:urls.map(url=>({itemId:item.id,url,alt:item.title}))})}await generateMatches(item.id);redirect(`/items/${item.id}`)}catch(err){if(err instanceof Error && err.message==="NEXT_REDIRECT")throw err;return{error:err instanceof Error?err.message:"Failed to create report."}}}
 export async function saveItem(itemId:string){const user=await requireUser();await db.savedItem.upsert({where:{userId_itemId:{userId:user.id,itemId}},create:{userId:user.id,itemId},update:{}})}
-export async function reportItem(itemId:string,reason:string){const user=await requireUser();const valid=["FAKE_LISTING","SCAM","HARASSMENT","STOLEN","INAPPROPRIATE","SPAM","SUSPICIOUS"] as const;if(!valid.includes(reason as typeof valid[number]))throw new Error("Invalid reason");await db.report.create({data:{itemId,reporterId:user.id,reason:reason as typeof valid[number]}})}
+export async function reportItem(_prev: FormState, fd: FormData): Promise<FormState> {
+  try {
+    const itemId = String(fd.get("itemId") ?? "").trim();
+    const reason = String(fd.get("reason") ?? "").trim();
+    const details = String(fd.get("details") ?? "").trim();
+    if (!itemId) return { error: "Missing item ID." };
+    const valid = ["FAKE_LISTING", "SCAM", "HARASSMENT", "STOLEN", "INAPPROPRIATE", "SPAM", "SUSPICIOUS"] as const;
+    if (!valid.includes(reason as (typeof valid)[number])) return { error: "Invalid reason." };
+    if (details.length < 10) return { error: "Please provide at least 10 characters so we can investigate." };
+    if (details.length > 2000) return { error: "Keep it under 2000 characters." };
+    const user = await requireUser();
+    await db.report.create({ data: { itemId, reporterId: user.id, reason: reason as typeof valid[number], details: details || null } });
+    return { success: "Report submitted. Our Safety team will review it within 24 hours." };
+  } catch (err) {
+    return { error: err instanceof Error ? err.message : "Failed to submit report." };
+  }
+}
 export async function startConversation(itemId:string){const user=await currentUser();if(!user)redirect("/login");const item=await db.item.findUnique({where:{id:itemId},select:{id:true,ownerId:true,status:true}});if(!item||item.ownerId===user.id||item.status==="RESOLVED"||item.status==="REMOVED")redirect(`/items/${itemId}`);const [a,b]=[user.id,item.ownerId].sort();const existing=await db.conversation.findUnique({where:{itemId_participantAId_participantBId:{itemId:item.id,participantAId:a,participantBId:b}}});if(existing)redirect(`/messages/${existing.id}`);const conversation=await db.conversation.create({data:{itemId:item.id,participantAId:a,participantBId:b}});redirect(`/messages/${conversation.id}`)}
 export async function sendMessage(conversationId:string,fd:FormData){const user=await requireUser();const conversation=await db.conversation.findUnique({where:{id:conversationId}});if(!conversation||(conversation.participantAId!==user.id&&conversation.participantBId!==user.id))throw new Error("UNAUTHORIZED");const body=String(fd.get("body")||"").trim();if(!body)redirect(`/messages/${conversationId}`);if(body.length>2000)throw new Error("Message too long");await db.message.create({data:{conversationId,senderId:user.id,body}});const otherId=conversation.participantAId===user.id?conversation.participantBId:conversation.participantAId;await db.notification.create({data:{userId:otherId,title:"New message",body:`${user.displayName} sent you a message.`,link:`/messages/${conversationId}`}});redirect(`/messages/${conversationId}`)}
 export async function unsaveItem(itemId:string){const user=await requireUser();await db.savedItem.deleteMany({where:{userId:user.id,itemId}})}
 export async function claimItem(itemId:string,fd:FormData){const user=await requireUser();const item=await db.item.findUnique({where:{id:itemId},select:{id:true,type:true,status:true,ownerId:true,title:true}});const answer=String(fd.get("answer")||"").trim();if(!item||item.type!=="FOUND"||item.ownerId===user.id||!["ACTIVE","MATCHED"].includes(item.status)||answer.length<10||answer.length>1000)redirect(`/items/${itemId}`);const dup=await db.claim.findFirst({where:{itemId:item.id,claimantId:user.id,status:{in:["PENDING","UNDER_REVIEW","APPROVED"]}}});if(!dup){await db.claim.create({data:{itemId:item.id,claimantId:user.id,verificationAnswer:answer}});await db.notification.create({data:{userId:item.ownerId,title:"New ownership claim",body:`${user.displayName} submitted a claim for ${item.title}.`,link:"/dashboard/claims"}})}redirect(`/items/${itemId}`)}
-export async function updateItem(itemId:string,_:FormState,fd:FormData):Promise<FormState>{const user=await requireUser();const item=await db.item.findUnique({where:{id:itemId}});if(!item||item.ownerId!==user.id)return{error:"You can only edit reports you own."};const parsed=itemSchema.safeParse(Object.fromEntries(fd));if(!parsed.success)return{error:"Please complete all required fields correctly."};const files=fd.getAll("images").filter((v):v is File=>v instanceof File&&v.size>0);const allowed=new Set(["image/jpeg","image/png","image/webp"]);if(files.length>5)return{error:"You can upload a maximum of 5 images."};if(files.some(f=>f.size>5*1024*1024||!allowed.has(f.type)))return{error:"Images must be JPG, PNG, or WebP and no larger than 5 MB each."};const removeIds=fd.getAll("removeImage").filter((v):v is string=>typeof v==="string");const data=parsed.data;await db.item.update({where:{id:item.id},data:{...data,privateSerial:data.privateSerial||null,brand:data.brand||null,color:data.color||null,barangay:data.barangay||null,distinguishingFeatures:data.distinguishingFeatures||null,privateProof:data.privateProof||null,reward:data.reward||null}});if(removeIds.length)await db.itemImage.deleteMany({where:{id:{in:removeIds},itemId:item.id}});if(files.length){const uploadDir=path.join(process.cwd(),"public","uploads");await mkdir(uploadDir,{recursive:true});const urls=await Promise.all(files.map(async file=>{const extension=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";const name=`${randomUUID()}.${extension}`;await writeFile(path.join(uploadDir,name),Buffer.from(await file.arrayBuffer()));return `/uploads/${name}`}));await db.itemImage.createMany({data:urls.map(url=>({itemId:item.id,url,alt:data.title}))})}await generateMatches(item.id);redirect(`/items/${item.id}`)}
+export async function updateItem(itemId:string,_:FormState,fd:FormData):Promise<FormState>{try{const user=await requireUser();const item=await db.item.findUnique({where:{id:itemId}});if(!item||item.ownerId!==user.id)return{error:"You can only edit reports you own."};const parsed=itemSchema.safeParse(Object.fromEntries(fd));if(!parsed.success)return{error:"Please complete all required fields correctly."};const files=fd.getAll("images").filter((v):v is File=>v instanceof File&&v.size>0);const allowed=new Set(["image/jpeg","image/png","image/webp"]);if(files.length>5)return{error:"You can upload a maximum of 5 images."};if(files.some(f=>f.size>5*1024*1024||!allowed.has(f.type)))return{error:"Images must be JPG, PNG, or WebP and no larger than 5 MB each."};const removeIds=fd.getAll("removeImage").filter((v):v is string=>typeof v==="string");const data=parsed.data;await db.item.update({where:{id:item.id},data:{...data,privateSerial:data.privateSerial||null,brand:data.brand||null,color:data.color||null,barangay:data.barangay||null,distinguishingFeatures:data.distinguishingFeatures||null,privateProof:data.privateProof||null,reward:data.reward||null}});if(removeIds.length)await db.itemImage.deleteMany({where:{id:{in:removeIds},itemId:item.id}});if(files.length){const uploadDir=path.join(process.cwd(),"public","uploads");await mkdir(uploadDir,{recursive:true});const urls=await Promise.all(files.map(async file=>{const extension=file.type==="image/png"?"png":file.type==="image/webp"?"webp":"jpg";const name=`${randomUUID()}.${extension}`;await writeFile(path.join(uploadDir,name),Buffer.from(await file.arrayBuffer()));return `/uploads/${name}`}));await db.itemImage.createMany({data:urls.map(url=>({itemId:item.id,url,alt:data.title}))})}await generateMatches(item.id);redirect(`/items/${item.id}`)}catch(err){if(err instanceof Error && err.message==="NEXT_REDIRECT")throw err;return{error:err instanceof Error?err.message:"Failed to update report."}}}
 export async function deleteItem(itemId:string){const user=await requireUser();await db.item.updateMany({where:{id:itemId,ownerId:user.id},data:{status:"REMOVED"}});redirect("/dashboard")}
 export async function reviewClaim(claimId:string,action:"APPROVED"|"REJECTED"){const user=await requireUser();const claim=await db.claim.findUnique({where:{id:claimId}});if(!claim||(action!=="APPROVED"&&action!=="REJECTED"))redirect("/dashboard/claims");const item=await db.item.findUnique({where:{id:claim.itemId},select:{id:true,ownerId:true,title:true,status:true}});if(!item||item.ownerId!==user.id)redirect("/dashboard/claims");if(claim.status==="PENDING"||claim.status==="UNDER_REVIEW"){if(action==="APPROVED"&&!["RESOLVED","REMOVED"].includes(item.status)){await db.claim.update({where:{id:claim.id},data:{status:"APPROVED"}});await db.item.update({where:{id:item.id},data:{status:"CLAIM_PENDING"}});await db.notification.create({data:{userId:claim.claimantId,title:"Claim approved",body:`Your claim for ${item.title} was approved. Coordinate a safe handover with the reporter.`,link:`/items/${item.id}`}})}else if(action==="REJECTED"){await db.claim.update({where:{id:claim.id},data:{status:"REJECTED"}});await db.notification.create({data:{userId:claim.claimantId,title:"Claim declined",body:`Your claim for ${item.title} was not approved.`,link:`/items/${item.id}`}})}}redirect("/dashboard/claims")}
 
@@ -577,7 +657,7 @@ export type NotifState = FormState & Partial<NotificationPrefs>;
 export async function updateNotificationPrefs(_prev: NotifState, fd: FormData): Promise<NotifState> {
   const user = await requireUser();
   try {
-    const on = (key: string) => (fd.get(key)?.toString() === "on" ? true : false);
+    const on = (key: string) => (fd.get(key)?.toString() === "1" ? true : false);
     const prefs = {
       notifyOnCommentEmail: on("notifyOnCommentEmail"),
       notifyOnCommentInApp: on("notifyOnCommentInApp"),
@@ -608,8 +688,8 @@ export async function markItemResolved(_prev: FormState, fd: FormData): Promise<
 }
 
 export async function createItemReport(_prev: FormState, fd: FormData): Promise<FormState> {
-  const user = await requireUser();
   try {
+    const user = await requireUser();
     const typeRaw = fd.get("type")?.toString().toUpperCase();
     if (typeRaw !== "LOST" && typeRaw !== "FOUND") return { error: "Invalid item type." };
     const categoryId = fd.get("categoryId")?.toString();
@@ -671,13 +751,36 @@ export async function createItemReport(_prev: FormState, fd: FormData): Promise<
       },
     });
 
-    const imagesJson = fd.get("images")?.toString();
+    const files = fd.getAll("images").filter((v): v is File => v instanceof File && v.size > 0);
+    const allowed = new Set(["image/jpeg", "image/png", "image/webp"]);
+    if (files.length > 5) return { error: "You can upload a maximum of 5 images." };
+    if (files.some((f) => f.size > 5 * 1024 * 1024 || !allowed.has(f.type))) {
+      return { error: "Images must be JPG, PNG, or WebP and no larger than 5 MB each." };
+    }
+
+    if (files.length) {
+      const uploadDir = path.join(process.cwd(), "public", "uploads");
+      await mkdir(uploadDir, { recursive: true });
+      const urls = await Promise.all(
+        files.map(async (file) => {
+          const extension = file.type === "image/png" ? "png" : file.type === "image/webp" ? "webp" : "jpg";
+          const name = `${randomUUID()}.${extension}`;
+          await writeFile(path.join(uploadDir, name), Buffer.from(await file.arrayBuffer()));
+          return `/uploads/${name}`;
+        }),
+      );
+      for (const url of urls) {
+        await db.itemImage.create({ data: { itemId: item.id, url, alt: `${title} image` } });
+      }
+    }
+
+    const imagesJson = fd.get("imageUrls")?.toString();
     if (imagesJson) {
       try {
         const urls = JSON.parse(imagesJson) as string[];
         if (Array.isArray(urls) && urls.length > 0) {
           for (const url of urls) {
-            if (typeof url === "string" && url.length > 0) {
+            if (typeof url === "string" && url.length > 0 && !url.startsWith("blob:")) {
               await db.itemImage.create({
                 data: { itemId: item.id, url, alt: `${title} image` },
               });

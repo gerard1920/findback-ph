@@ -22,7 +22,7 @@ export default async function SavedItems() {
         <div className="mt-8 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {saved.map((s) => (
             <div className="relative" key={s.itemId}>
-              <ItemCard item={s.item} />
+              <ItemCard item={s.item} mine={false} />
               <form action={unsaveItem.bind(null, s.item.id)} className="absolute right-3 top-3 z-10">
                 <button className="rounded-full bg-white/90 px-3 py-1 text-xs font-semibold text-slate-700 shadow hover:bg-white">
                   Remove

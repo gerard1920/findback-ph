@@ -1,1 +1,28 @@
-import { Suspense } from "react";import { AuthForm } from "@/components/auth-form";import Link from "next/link";import { Spinner } from "@/components/ui/spinner";export default function Login(){return <main className="container-page py-12"><div className="mx-auto"><h1 className="text-center text-3xl font-extrabold tracking-tight sm:text-4xl">Welcome back</h1><p className="mt-2 text-center text-slate-600">Sign in to manage your reports and messages.</p><div className="mt-8"><Suspense fallback={<div className="card grid place-items-center p-10"><Spinner size="md" /></div>}><AuthForm initialMode="login"/></Suspense></div><p className="mt-6 text-center text-sm"><Link className="font-semibold text-indigo-700 underline hover:text-indigo-900" href="/forgot-password">Forgot password?</Link></p><p className="mt-2 text-center text-sm">New to FindBack PH? <Link className="font-semibold text-indigo-700 underline hover:text-indigo-900" href="/register">Create an account</Link></p></div></main>}
+import { Suspense } from "react";
+import { AuthForm } from "@/components/auth-form";
+import Link from "next/link";
+import { Spinner } from "@/components/ui/spinner";
+
+export default function Login() {
+  return (
+    <main className="container-page py-12">
+      <div className="mx-auto w-full max-w-md">
+        <div className="text-center">
+          <h1 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Welcome back</h1>
+          <p className="mt-2 text-slate-600">Sign in to manage your reports and messages.</p>
+        </div>
+        <div className="mt-8">
+          <Suspense fallback={<div className="card grid place-items-center p-10"><Spinner size="md" /></div>}>
+            <AuthForm initialMode="login" />
+          </Suspense>
+        </div>
+        <p className="mt-6 text-center text-sm">
+          <Link className="font-semibold text-indigo-700 underline hover:text-indigo-900" href="/forgot-password">Forgot password?</Link>
+        </p>
+        <p className="mt-2 text-center text-sm text-slate-600">
+          New to FindBack PH? <Link className="font-semibold text-indigo-700 underline hover:text-indigo-900" href="/register">Create an account</Link>
+        </p>
+      </div>
+    </main>
+  );
+}

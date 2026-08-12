@@ -38,7 +38,7 @@ export default async function Claims() {
               <article className="card p-5" key={c.id}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <b>{item?.title ?? "Item"}</b>
-                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold {statusStyles[c.status]}`}>{c.status}</span>
+                  <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${statusStyles[c.status]}`}>{c.status}</span>
                 </div>
                 <p className="mt-1 text-sm text-slate-600">Claimant: {names.get(c.claimantId) ?? "User"}</p>
                 <p className="mt-3 whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-sm text-slate-700">“{c.verificationAnswer}”</p>

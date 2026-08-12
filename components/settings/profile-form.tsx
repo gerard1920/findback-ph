@@ -2,12 +2,13 @@
 import { useState, useEffect } from "react";
 import { useActionState } from "react";
 import { updateProfile, type FormState } from "@/app/actions";
-import { User, Phone, MapPin, GraduationCap } from "lucide-react";
+import { User, Phone, MapPin, GraduationCap, Mail } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { Spinner } from "@/components/ui/spinner";
 
 type Props = {
   initial: {
+    email: string;
     displayName: string;
     phone: string;
     city: string;
@@ -122,6 +123,21 @@ export function ProfileForm({ initial }: Props) {
           </p>
         </div>
       </div>
+
+      <label className="block sm:col-span-2">
+        <span className="label">
+          <span className="inline-flex items-center gap-1.5">
+            <Mail size={14} /> Email
+          </span>
+        </span>
+        <input
+          name="email"
+          disabled
+          value={values.email}
+          className="cursor-not-allowed bg-slate-50 text-slate-600"
+        />
+        <p className="mt-1.5 text-xs text-slate-500">Email cannot be changed.</p>
+      </label>
 
       <label className="block sm:col-span-2">
         <span className="label">

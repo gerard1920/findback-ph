@@ -122,7 +122,7 @@ export function EnhancedReportForm({
       className="mt-8 space-y-6 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-7"
     >
       <input type="hidden" name="type" value={type} />
-      <input type="hidden" name="images" value={JSON.stringify(images.map((i) => i.url))} />
+      <input type="hidden" name="imageUrls" value={JSON.stringify(images.filter((i) => i.url.startsWith("http")).map((i) => i.url))} />
       <input type="hidden" name="timeOccurred" value={timeOccurred} />
 
       <div className={`rounded-xl bg-gradient-to-br p-4 ring-1 ${banner.color}`}>
@@ -349,6 +349,7 @@ export function EnhancedReportForm({
               <input
                 ref={fileRef}
                 type="file"
+                name="images"
                 accept="image/jpeg,image/png,image/webp,image/gif"
                 multiple
                 onChange={(e) => addImageFile(e.target.files)}

@@ -1,33 +1,41 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 
 export async function GET(request: Request) {
   try {
     const { searchParams } = new URL(request.url);
     const q = searchParams.get("q")?.trim();
     const city = searchParams.get("city")?.trim();
+    const category = searchParams.get("category")?.trim();
 
-    const items = await db.item.findMany({
-      where: {
-        type: "FOUND",
-        status: { in: ["ACTIVE", "MATCHED", "CLAIM_PENDING"] },
-        ...(q ? {
-          OR: [
-            { title: { contains: q.toLowerCase() } },
-            { description: { contains: q.toLowerCase() } },
-          ],
-        } : {}),
-        ...(city ? { city: { contains: city.toLowerCase() } } : {}),
-      },
-      include: { 
-        images: { take: 1 }, 
-        category: true 
-      },
-      orderBy: { createdAt: "desc" },
-      take: 24,
-    });
+    const where: Prisma.ItemWhereInput = {
+      type: "FOUND",
+      status: { in: ["ACTIVE", "MATCHED", "CLAIM_PENDING"] },
+      ...(q ? {
+        OR: [
+          { title: { contains: q.toLowerCase() } },
+          { description: { contains: q.toLowerCase() } },
+          { brand: { contains: q.toLowerCase() } },
+        ],
+      } : {}),
+      ...(city ? { city: { contains: city.toLowerCase() } } : {}),
+      ...(category ? { category: { name: category } } : {}),
+    };
 
-    // Transform to match CardItem type
+    const [items, cats] = await Promise.all([
+      db.item.findMany({
+        where,
+        include: { 
+          images: { take: 1 }, 
+          category: true 
+        },
+        orderBy: { createdAt: "desc" },
+        take: 24,
+      }),
+      db.category.findMany(),
+    ]);
+
     const transformedItems = items.map(item => ({
       id: item.id,
       title: item.title,
@@ -40,9 +48,9 @@ export async function GET(request: Request) {
       category: item.category,
     }));
 
-    return NextResponse.json({ items: transformedItems });
+    return NextResponse.json({ items: transformedItems, cats });
   } catch (error) {
     console.error("Failed to fetch found items:", error);
-    return NextResponse.json({ items: [] }, { status: 500 });
+    return NextResponse.json({ items: [], cats: [] }, { status: 500 });
   }
 }

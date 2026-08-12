@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useEffect, useMemo, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { login, register, type FormState } from "@/app/actions";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -35,9 +35,16 @@ export function AuthForm({ initialMode = "login" }: { initialMode?: Mode }) {
 
   const [form, setForm] = useState({ email: "", password: "", name: "", phone: "" });
   const [touched, setTouched] = useState<Record<string, boolean>>({});
+  const lastProcessedRef = useRef<{ login: string; register: string }>({ login: "", register: "" });
 
   useEffect(() => {
     const state = mode === "login" ? loginState : regState;
+    const stateKey = mode === "login" ? "login" : "register";
+    const fingerprint =
+      (state.success ? "s:" + state.success : "") + "|" + (state.error ? "e:" + state.error : "");
+    if (lastProcessedRef.current[stateKey] === fingerprint) return;
+    lastProcessedRef.current[stateKey] = fingerprint;
+    if (!state.success && !state.error) return;
     if (state?.success) {
       toast({
         variant: "success",
@@ -45,7 +52,7 @@ export function AuthForm({ initialMode = "login" }: { initialMode?: Mode }) {
         description: state.success + " Redirecting…",
         durationMs: 2600,
       });
-      const goto = mode === "login" ? next : "/dashboard";
+      const goto = mode === "login" ? next : "/settings";
       const t = window.setTimeout(() => router.push(goto), 700);
       return () => window.clearTimeout(t);
     }
@@ -54,6 +61,7 @@ export function AuthForm({ initialMode = "login" }: { initialMode?: Mode }) {
         variant: "error",
         title: mode === "login" ? "Unable to sign in" : "Couldn't create account",
         description: state.error,
+        durationMs: 5000,
       });
     }
   }, [loginState, regState, mode, next, router, toast]);
@@ -100,6 +108,7 @@ export function AuthForm({ initialMode = "login" }: { initialMode?: Mode }) {
   function switchMode(next: Mode) {
     setMode(next);
     setTouched({});
+    lastProcessedRef.current = { login: "", register: "" };
   }
 
   return (
@@ -148,14 +157,6 @@ export function AuthForm({ initialMode = "login" }: { initialMode?: Mode }) {
         className="mt-6 space-y-4"
       >
         <input type="hidden" name="next" value={next} />
-        <input type="hidden" name="email" value={form.email} />
-        <input type="hidden" name="password" value={form.password} />
-        {mode === "register" && (
-          <>
-            <input type="hidden" name="name" value={form.name} />
-            <input type="hidden" name="phone" value={form.phone} />
-          </>
-        )}
 
         {mode === "register" && (
           <label className="block">
@@ -165,7 +166,7 @@ export function AuthForm({ initialMode = "login" }: { initialMode?: Mode }) {
               </span>
             </span>
             <input
-              name="name_display"
+              name="displayName"
               value={form.name}
               onBlur={() => setTouched((t) => ({ ...t, name: true }))}
               onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
@@ -186,7 +187,7 @@ export function AuthForm({ initialMode = "login" }: { initialMode?: Mode }) {
             </span>
           </span>
           <input
-            name="email_display"
+            name="email"
             type="email"
             autoComplete="email"
             value={form.email}
@@ -217,7 +218,7 @@ export function AuthForm({ initialMode = "login" }: { initialMode?: Mode }) {
           <label className="block">
             <span className="label">Mobile number</span>
             <input
-              name="phone_display"
+              name="phoneNumber"
               inputMode="tel"
               value={form.phone}
               onBlur={() => setTouched((t) => ({ ...t, phone: true }))}
@@ -237,7 +238,7 @@ export function AuthForm({ initialMode = "login" }: { initialMode?: Mode }) {
             </span>
           </span>
           <input
-            name="password_display"
+            name="password"
             type="password"
             autoComplete={mode === "login" ? "current-password" : "new-password"}
             value={form.password}
@@ -293,7 +294,7 @@ export function AuthForm({ initialMode = "login" }: { initialMode?: Mode }) {
         <button
           type="submit"
           disabled={loginPending || regPending}
-          className="btn-primary shine w-full items-center justify-center py-3.5 text-base"
+          className="btn-primary w-full items-center justify-center py-3.5 text-base"
         >
           {loginPending || regPending ? (
             <>

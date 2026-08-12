@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { AlertTriangle, ArrowLeft, Send, ShieldCheck } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { Spinner } from "@/components/ui/spinner";
-import type { FormState } from "@/app/actions";
+import { reportItem, type FormState } from "@/app/actions";
 
 const REASONS = [
   { id: "FAKE_LISTING", label: "Fake listing" },
@@ -24,13 +24,16 @@ export default function ReportAbuseClient() {
   const { toast } = useToast();
   const itemId = params.get("item") ?? "";
 
+  const [state, formAction, pending] = useActionState<FormState, FormData>(
+    (_prev: FormState, fd: FormData) => reportItem({}, fd),
+    {},
+  );
+
   const [reason, setReason] = useState<string>("");
   const [details, setDetails] = useState("");
   const [contact, setContact] = useState("");
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
-  const [pending, setPending] = useState(false);
-  const [state, setState] = useState<FormState>({});
 
   useEffect(() => {
     if (state?.success) {
@@ -62,29 +65,14 @@ export default function ReportAbuseClient() {
     return Object.values(errs).every((v) => !v);
   }
 
-  async function onSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
+  function onSubmit(e: React.FormEvent<HTMLFormElement>) {
     if (!validate()) {
+      e.preventDefault();
       toast({
         variant: "error",
         title: "Please fix the highlighted fields",
         description: "Reason and details are required before we can accept your report.",
       });
-      return;
-    }
-    setPending(true);
-    try {
-      const fd = new FormData();
-      if (itemId) fd.set("itemId", itemId);
-      fd.set("reason", reason);
-      fd.set("details", details);
-      if (contact) fd.set("contact", contact);
-      await new Promise((r) => setTimeout(r, 1400));
-      setState({ success: "Our Safety team will review this within 24 hours. Thank you for keeping the community safe." });
-    } catch {
-      setState({ error: "Something went wrong. Please try again in a moment." });
-    } finally {
-      setPending(false);
     }
   }
 
@@ -117,7 +105,7 @@ export default function ReportAbuseClient() {
           </div>
         </div>
 
-        <form onSubmit={onSubmit} noValidate className="card mt-8 space-y-5 p-6">
+        <form action={formAction} onSubmit={onSubmit} noValidate className="card mt-8 space-y-5 p-6">
           <input type="hidden" name="itemId" value={itemId} />
           {itemId && (
             <div className="rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
@@ -154,6 +142,7 @@ export default function ReportAbuseClient() {
                 );
               })}
             </div>
+            <input type="hidden" name="reason" value={reason} />
             {touched.reason && errors.reason ? (
               <p className="mt-2 text-xs font-medium text-rose-700">{errors.reason}</p>
             ) : null}
@@ -164,6 +153,7 @@ export default function ReportAbuseClient() {
               What happened? <span className="text-rose-600">*</span>
             </span>
             <textarea
+              name="details"
               value={details}
               onChange={(e) => {
                 setDetails(e.target.value);
@@ -208,6 +198,7 @@ export default function ReportAbuseClient() {
             <span className="label">Contact email (optional)</span>
             <input
               type="email"
+              name="contact"
               value={contact}
               onChange={(e) => setContact(e.target.value)}
               onBlur={() => {
@@ -228,7 +219,7 @@ export default function ReportAbuseClient() {
 
           <div className="flex flex-col-reverse items-stretch justify-end gap-3 border-t border-slate-100 pt-5 sm:flex-row sm:items-center">
             <Link href="/lost" className="btn-ghost px-5 py-3">Cancel</Link>
-            <button type="submit" disabled={pending} className="btn-primary items-center justify-center min-w-[240px]">
+            <button type="submit" disabled={pending || !reason} className="btn-primary items-center justify-center min-w-[240px]">
               {pending ? (
                 <>
                   <Spinner size="xs" className="text-white" />
