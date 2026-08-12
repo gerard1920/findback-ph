@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import {
   Search,
@@ -273,9 +274,11 @@ export default function Home() {
             <div className="lg:col-span-5">
               <div className="mx-auto w-full max-w-md rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                 <div className="aspect-[4/3] overflow-hidden rounded-2xl bg-slate-100">
-                  <img
+                  <Image
                     src="https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=800&auto=format&fit=crop"
                     alt="Found item preview"
+                    width={800}
+                    height={600}
                     className="h-full w-full object-cover"
                   />
                 </div>

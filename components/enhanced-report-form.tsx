@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import { useActionState, useMemo, useRef, useState } from "react";
 import { createItemReport, type FormState } from "@/app/actions";
 import {
@@ -367,7 +368,7 @@ export function EnhancedReportForm({
             <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
               {images.map((img, idx) => (
                 <div key={`${img.url}-${idx}`} className="relative group aspect-square overflow-hidden rounded-lg border border-slate-200 bg-slate-100">
-                  <img src={img.url} alt={`Preview ${idx + 1}`} className="h-full w-full object-cover" />
+                  <Image src={img.url} alt={`Preview ${idx + 1}`} width={400} height={400} className="h-full w-full object-cover" />
                   <button
                     type="button"
                     onClick={() => removeImageAt(idx)}

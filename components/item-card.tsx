@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { MapPin, CalendarDays, Bookmark, BookmarkCheck, RotateCcw, ExternalLink } from "lucide-react";
 import { useState, useTransition } from "react";
@@ -111,11 +112,14 @@ export function ItemCard({ item, mine }: { item: CardItem; mine?: boolean }) {
     <article className="group card card-hover relative overflow-hidden">
       <div className="relative h-44 overflow-hidden bg-slate-100">
         {item.images[0] ? (
-          <img
+          <Image
             src={item.images[0].url}
             alt={item.title}
-            loading="lazy"
-            className="h-full w-full object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+            width={800}
+            height={500}
+            fill
+            className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
+            sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
           />
         ) : (
           <div className="grid h-full place-items-center text-slate-400">

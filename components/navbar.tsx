@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -204,10 +205,12 @@ export function Navbar({ user }: { user: NavbarUser | null }) {
                     </span>
                   </span>
                   {user.avatarUrl ? (
-                    <img
+                    <Image
                       src={user.avatarUrl}
                       alt=""
-                      className="h-9 w-9 rounded-full object-cover ring-2 ring-white shadow"
+                      width={36}
+                      height={36}
+                      className="rounded-full object-cover ring-2 ring-white shadow"
                     />
                   ) : (
                     <span className="grid h-9 w-9 place-items-center rounded-full bg-indigo-700 text-sm font-bold text-white ring-2 ring-white shadow">
@@ -225,10 +228,12 @@ export function Navbar({ user }: { user: NavbarUser | null }) {
                     <div className="border-b border-slate-100 bg-slate-50/60 p-4">
                       <div className="flex items-center gap-3">
                         {user.avatarUrl ? (
-                          <img
+                          <Image
                             src={user.avatarUrl}
                             alt=""
-                            className="h-12 w-12 rounded-full object-cover ring-2 ring-white shadow"
+                            width={48}
+                            height={48}
+                            className="rounded-full object-cover ring-2 ring-white shadow"
                           />
                         ) : (
                           <div className="grid h-12 w-12 place-items-center rounded-full bg-indigo-700 text-base font-bold text-white ring-2 ring-white shadow">

@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { useActionState, useState } from "react";
 import { updateItem, FormState } from "@/app/actions";
 
@@ -59,7 +60,7 @@ export function EditItemForm({
           <div className="grid grid-cols-3 gap-3 sm:grid-cols-5">
             {item.images.map((img) => (
               <label className="relative block" key={img.id}>
-                <img src={img.url} alt={img.alt ?? "Item photo"} className="aspect-square w-full rounded-lg border border-slate-200 object-cover" />
+                <Image src={img.url} alt={img.alt ?? "Item photo"} width={400} height={400} className="aspect-square w-full rounded-lg border border-slate-200 object-cover" />
                 <input type="checkbox" name="removeImage" value={img.id} className="absolute right-1 top-1 h-5 w-5 rounded border-slate-300" />
               </label>
             ))}
@@ -67,7 +68,7 @@ export function EditItemForm({
         </div>
       )}
       <label className="col-span-full"><span className="label">Add more photos (optional)</span><input name="images" type="file" accept="image/jpeg,image/png,image/webp" multiple onChange={(event) => handleImages(event.target.files)} /><span className="mt-2 block text-xs text-slate-500">Up to 5 JPG, PNG, or WebP images, 5 MB each.</span></label>
-      {previews.length > 0 && <div className="col-span-full grid grid-cols-2 gap-3 sm:grid-cols-5">{previews.map((src, i) => <img key={src} src={src} alt={`New image ${i + 1}`} className="aspect-square w-full rounded-lg border border-slate-200 object-cover" />)}</div>}
+      {previews.length > 0 && <div className="col-span-full grid grid-cols-2 gap-3 sm:grid-cols-5">{previews.map((src, i) => <Image key={src} src={src} alt={`New image ${i + 1}`} width={400} height={400} className="aspect-square w-full rounded-lg border border-slate-200 object-cover" />)}</div>}
 
       <h2 className="col-span-full text-lg font-bold">Location & date</h2>
       <label><span className="label">Province *</span><input name="province" required defaultValue={item.province} /></label>

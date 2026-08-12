@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { use, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
@@ -202,9 +203,11 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
               <div className="grid gap-3 p-3 sm:grid-cols-2">
                 {item.images.map((img, idx) => (
                   <div key={idx} className="aspect-square overflow-hidden rounded-xl bg-slate-100">
-                    <img
+                    <Image
                       src={img.url}
                       alt={img.alt || item.title}
+                      width={800}
+                      height={800}
                       className="h-full w-full object-cover"
                     />
                   </div>
@@ -213,9 +216,11 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
             ) : (
               <div className="aspect-square bg-slate-100">
                 {item.images[0] ? (
-                  <img
+                  <Image
                     src={item.images[0].url}
                     alt={item.images[0].alt || item.title}
+                    width={800}
+                    height={800}
                     className="h-full w-full object-cover"
                   />
                 ) : (
@@ -231,7 +236,7 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
             <div className="flex gap-3 overflow-x-auto pb-1">
               {item.images.map((img, idx) => (
                 <div key={idx} className="h-16 w-20 shrink-0 overflow-hidden rounded-lg ring-1 ring-slate-200">
-                  <img src={img.url} alt={img.alt || `${item.title} ${idx + 1}`} className="h-full w-full object-cover" />
+                  <Image src={img.url} alt={img.alt || `${item.title} ${idx + 1}`} width={160} height={160} className="h-full w-full object-cover" />
                 </div>
               ))}
             </div>

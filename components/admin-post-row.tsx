@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import { AdminActionForm } from "@/components/admin-action-form";
 import { ConfirmButton } from "@/components/confirm-button";
 import {
@@ -45,7 +46,7 @@ export function PostRow({ post: i }: PostRowProps) {
     <tr className={i.flagged ? "bg-amber-50/40" : ""}>
       <td className="p-3">
         <div className="flex items-center gap-3">
-          <img src={img || "/placeholder.png"} alt={i.images[0]?.alt ?? i.title} className="h-12 w-12 rounded-lg border object-cover" />
+          <Image src={img || "/placeholder.png"} alt={i.images[0]?.alt ?? i.title} width={48} height={48} className="rounded-lg border object-cover" />
           <div>
             <p className="font-semibold line-clamp-1">{i.title}</p>
             <p className="text-xs text-slate-500">{i.category?.name ?? "—"} • {i.province ?? "—"}, {i.city ?? ""}</p>

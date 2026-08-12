@@ -1,4 +1,5 @@
 "use client";
+import Image from "next/image";
 import Link from "next/link";
 import { useActionState } from "react";
 import { markItemResolved, type FormState } from "@/app/actions";
@@ -47,7 +48,7 @@ function ItemRow({ item, type }: { item: ActivityItem; type: "LOST" | "FOUND" })
       <div className="shrink-0">
         <div className="h-24 w-24 overflow-hidden rounded-lg border border-slate-100 bg-slate-50">
           {cover ? (
-            <img src={cover} alt="" className="h-full w-full object-cover" />
+            <Image src={cover} alt="" width={200} height={200} className="h-full w-full object-cover" />
           ) : (
             <div className="flex h-full w-full items-center justify-center text-slate-300">
               <Search size={28} />

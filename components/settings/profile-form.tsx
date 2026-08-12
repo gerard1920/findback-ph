@@ -1,6 +1,7 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useActionState } from "react";
+import Image from "next/image";
 import { updateProfile, type FormState } from "@/app/actions";
 import { User, Phone, MapPin, GraduationCap, Mail } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
@@ -108,7 +109,7 @@ export function ProfileForm({ initial }: Props) {
       <div className="sm:col-span-2 flex flex-col items-start gap-4 rounded-2xl border border-indigo-200 bg-indigo-50 p-5 sm:flex-row sm:items-center">
         <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 ring-2 ring-white shadow-md">
           {values.avatarUrl ? (
-            <img src={values.avatarUrl} alt={values.displayName} className="h-full w-full object-cover" />
+            <Image src={values.avatarUrl} alt={values.displayName} width={80} height={80} className="h-full w-full object-cover" />
           ) : (
             <div className="grid h-full w-full place-items-center text-2xl font-black text-white">
               {(values.displayName || "U").trim().charAt(0).toUpperCase()}
