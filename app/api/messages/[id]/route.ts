@@ -43,7 +43,6 @@ export async function GET(
         messages: { orderBy: { createdAt: "asc" } },
       },
     });
-    console.log(`[messages/${id}] GET user=${user?.id} conversation=${conversation?.id ?? "null"} participants=${conversation ? `${conversation.participantAId}/${conversation.participantBId}` : "n/a"}`);
     if (!conversation || (conversation.participantAId !== user.id && conversation.participantBId !== user.id)) {
       return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
     }
@@ -73,9 +72,16 @@ export async function POST(
 
     const { id } = await params;
     const conversation = await db.conversation.findUnique({ where: { id } });
-    console.log(`[messages/${id}] POST user=${user?.id} conversation=${conversation?.id ?? "null"} participants=${conversation ? `${conversation.participantAId}/${conversation.participantBId}` : "n/a"}`);
     if (!conversation || (conversation.participantAId !== user.id && conversation.participantBId !== user.id)) {
       return NextResponse.json({ error: "Conversation not found" }, { status: 404 });
+    }
+
+    const otherId = conversation.participantAId === user.id ? conversation.participantBId : conversation.participantAId;
+    const blocked = await db.block.findFirst({
+      where: { OR: [{ blockerId: otherId, blockedId: user.id }, { blockerId: user.id, blockedId: otherId }] },
+    });
+    if (blocked) {
+      return NextResponse.json({ error: "You cannot message this user." }, { status: 403 });
     }
 
     let body: { body?: string } = {};
@@ -93,7 +99,6 @@ export async function POST(
       data: { conversationId: id, senderId: user.id, body: text },
     });
 
-    const otherId = conversation.participantAId === user.id ? conversation.participantBId : conversation.participantAId;
     await db.notification.create({
       data: {
         userId: otherId,
