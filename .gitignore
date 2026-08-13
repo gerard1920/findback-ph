@@ -1,4 +1,4 @@
-﻿# Dependencies
+# Dependencies
 node_modules/
 /.pnp
 .pnp.js
@@ -29,6 +29,7 @@ api/config.local.php
 
 # Vercel
 .vercel
+.vercelignore
 
 # TypeScript
 *.tsbuildinfo
@@ -61,3 +62,11 @@ profiledata.txt
 .env*
 dev_server.txt
 local-data-export.json
+
+# Scratch / ad-hoc debug scripts and notes
+debug-*.md
+final_smoke_test.ps1
+
+# Local uploads — use Vercel Blob in production
+public/uploads/*
+!public/uploads/.gitkeep
