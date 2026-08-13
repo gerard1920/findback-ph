@@ -18,7 +18,7 @@
     "seed": "tsx prisma/seed.ts"
   },
   "dependencies": {
-    "@prisma/client": "^6.12.0",
+    "@prisma/client": "^6.19.3",
     "@types/nodemailer": "^8.0.1",
     "@vercel/blob": "^2.8.0",
     "bcryptjs": "^2.4.3",
@@ -42,9 +42,17 @@
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.1.0",
     "postcss": "^8.4.49",
-    "prisma": "^6.12.0",
+    "prisma": "^6.19.3",
     "tailwindcss": "^3.4.16",
     "tsx": "^4.19.2",
     "typescript": "^5.7.2"
+  },
+  "allowScripts": {
+    "@prisma/engines@6.19.3": true,
+    "prisma@6.19.3": true,
+    "esbuild@0.28.2": true,
+    "unrs-resolver@1.12.2": true,
+    "sharp@0.34.5": true,
+    "@prisma/client@6.19.3": true
   }
 }
