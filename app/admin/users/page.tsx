@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
-import { Prisma, UserStatus, Role } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { UserRow } from "@/components/admin-user-row";
 
@@ -21,8 +21,8 @@ export default async function AdminUsersPage({
       { email: { contains: q.toLowerCase() } },
     ];
   }
-  if (status !== "ALL") where.status = status as UserStatus;
-  if (role !== "ALL") where.role = role as Role;
+  if (status !== "ALL") where.status = status;
+  if (role !== "ALL") where.role = role;
 
   // Deterministic, admin-agnostic ordering: admins pinned to the top, then
   // most recently created.  This makes the list identical no matter which

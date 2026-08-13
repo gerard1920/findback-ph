@@ -1,4 +1,3 @@
-import type { Role, UserStatus } from "@prisma/client";
 import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { db } from "@/lib/db";
@@ -19,7 +18,7 @@ export async function currentUser(){ try { const token=(await cookies()).get(coo
 export async function requireUser(){const u=await currentUser();if(!u) throw new Error("UNAUTHORIZED");if(u.status==="SUSPENDED"||u.status==="BANNED"||u.role==="SUSPENDED")throw new Error("SUSPENDED");return u;}
 
 export type ActiveUser =
-  | { ok: true; user: { id: string; email: string; displayName: string; username: string; role: Role; status: UserStatus } }
+  | { ok: true; user: { id: string; email: string; displayName: string; username: string; role: string; status: string } }
   | { ok: false; reason: "UNAUTHENTICATED" | "SUSPENDED" | "BANNED"; message: string };
 
 export async function activeUser(): Promise<ActiveUser> {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma, ReportReason } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { requireAdminApi } from "@/lib/admin";
 import { db } from "@/lib/db";
 
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
   const where: Prisma.ReportWhereInput = {};
   if (status !== "ALL") where.status = status;
-    if (reason !== "ALL") where.reason = reason as unknown as ReportReason;
+    if (reason !== "ALL") where.reason = reason;
 
   const reports = await db.report.findMany({
     where,

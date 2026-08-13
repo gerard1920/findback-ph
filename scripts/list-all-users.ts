@@ -3,7 +3,7 @@
  * Run with: npx tsx scripts/list-all-users.ts
  */
 
-import { PrismaClient, Role, UserStatus } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 

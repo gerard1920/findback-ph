@@ -1,7 +1,6 @@
 import { currentUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { redirect } from "next/navigation";
-import type { Role, UserStatus } from "@prisma/client";
 
 /**
  * Canonical set of default values every ADMIN account must have.
@@ -10,8 +9,8 @@ import type { Role, UserStatus } from "@prisma/client";
  * behaves consistently.
  */
 export const STANDARD_ADMIN_DEFAULTS = {
-  role: "ADMIN" as Role,
-  status: "ACTIVE" as UserStatus,
+  role: "ADMIN",
+  status: "ACTIVE",
   notifyOnCommentEmail: true,
   notifyOnCommentInApp: true,
   notifyOnClaimEmail: true,
@@ -40,8 +39,8 @@ const REQUIRED_ADMIN_BOOLEAN_FIELDS = [
  */
 export function computeAdminNormalization(user: {
   id: string;
-  role: Role;
-  status: UserStatus;
+  role: string;
+  status: string;
   notifyOnCommentEmail?: boolean;
   notifyOnCommentInApp?: boolean;
   notifyOnClaimEmail?: boolean;
@@ -52,7 +51,7 @@ export function computeAdminNormalization(user: {
   if (user.role !== "ADMIN") return null;
 
   const updates: Partial<{
-    status: UserStatus;
+    status: string;
     notifyOnCommentEmail: boolean;
     notifyOnCommentInApp: boolean;
     notifyOnClaimEmail: boolean;

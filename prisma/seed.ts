@@ -1,4 +1,4 @@
-import { ItemType, PrismaClient } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
 import { STANDARD_ADMIN_DEFAULTS } from "@/lib/admin";
 
@@ -75,7 +75,7 @@ async function main() {
         {
           ownerId: user.id,
           categoryId: cat.id,
-          type: ItemType.LOST,
+          type: "LOST",
           title: "Black iPhone 15",
           brand: "Apple",
           color: "Black",
@@ -88,7 +88,7 @@ async function main() {
         {
           ownerId: user.id,
           categoryId: cat.id,
-          type: ItemType.FOUND,
+          type: "FOUND",
           title: "Black iPhone",
           brand: "Apple",
           color: "Black",

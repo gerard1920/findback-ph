@@ -11,7 +11,6 @@ import { isUuid, sha256 } from "@/lib/crypto";
 import { sendPasswordResetEmail, isAnyEmailConfigured, shouldExposeResetLink } from "@/lib/mail";
 import { logAdmin, STANDARD_ADMIN_DEFAULTS, ensureAllAdminsNormalized } from "@/lib/admin";
 import { saveUploadedFile } from "@/lib/storage";
-import type { ReportReason } from "@prisma/client";
 export type FormState={error?:string;success?:string};
 export async function register(_:FormState,fd:FormData):Promise<FormState>{
   const raw=Object.fromEntries(fd);
@@ -384,7 +383,7 @@ export async function reportUser(targetUserId: string, fd: FormData) {
   if (!target) throw new Error("NOT_FOUND");
   const existing = await db.report.findFirst({ where: { reporterId: user.id, reportedUserId: targetUserId } });
   if (existing) throw new Error("You have already reported this user.");
-  await db.report.create({ data: { reporterId: user.id, reportedUserId: targetUserId, reason: reason as ReportReason, details } });
+  await db.report.create({ data: { reporterId: user.id, reportedUserId: targetUserId, reason: reason as string, details } });
   redirect(`/users/${targetUserId}?reported=1`);
 }
 const RESET_TOKEN_TTL_MS = 1000 * 60 * 60; // 1 hour

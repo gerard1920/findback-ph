@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
-import { Prisma, ReportReason } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { ReportRow } from "@/components/admin-report-row";
 
@@ -16,7 +16,7 @@ export default async function AdminReportsPage({
 
   const where: Prisma.ReportWhereInput = {};
   if (status !== "ALL") where.status = status;
-  if (reason !== "ALL") where.reason = reason as ReportReason;
+  if (reason !== "ALL") where.reason = reason;
 
   const reports = await db.report.findMany({
     where,

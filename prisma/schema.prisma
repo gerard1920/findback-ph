@@ -5,51 +5,7 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-enum Role {
-  USER
-  ADMIN
-  SUSPENDED
-}
-enum UserStatus {
-  ACTIVE
-  SUSPENDED
-  BANNED
-}
-enum ItemType {
-  LOST
-  FOUND
-}
-enum ItemStatus {
-  ACTIVE
-  MATCHED
-  CLAIM_PENDING
-  RESOLVED
-  EXPIRED
-  REMOVED
-}
-enum MatchStatus {
-  PENDING
-  CONTACTED
-  VERIFIED
-  REJECTED
-  RESOLVED
-}
-enum ClaimStatus {
-  PENDING
-  UNDER_REVIEW
-  APPROVED
-  REJECTED
-  CANCELLED
-}
-enum ReportReason {
-  FAKE_LISTING
-  SCAM
-  HARASSMENT
-  STOLEN
-  INAPPROPRIATE
-  SPAM
-  SUSPICIOUS
-}
+
 model User {
   id                      String              @id @default(uuid())
   email                   String              @unique
@@ -67,8 +23,8 @@ model User {
   notifyOnClaimInApp      Boolean             @default(true)
   notifyOnMessageEmail    Boolean             @default(true)
   notifyOnMessageInApp    Boolean             @default(true)
-  role                    Role                @default(USER)
-  status                  UserStatus          @default(ACTIVE)
+  role                    String                @default("USER")
+  status                  String                @default("ACTIVE")
   createdAt               DateTime            @default(now())
   updatedAt               DateTime            @updatedAt
   items                   Item[]
@@ -99,8 +55,8 @@ model Item {
   owner                  User        @relation(fields: [ownerId], references: [id], onDelete: Cascade)
   categoryId             String
   category               Category    @relation(fields: [categoryId], references: [id])
-  type                   ItemType
-  status                 ItemStatus  @default(ACTIVE)
+  type                   String
+  status                 String  @default("ACTIVE")
   flagged                Boolean     @default(false)
   title                  String
   brand                  String?
@@ -146,7 +102,7 @@ model Match {
   lostItem    Item        @relation("MatchLostItem", fields: [lostItemId], references: [id])
   foundItem   Item        @relation("MatchFoundItem", fields: [foundItemId], references: [id])
   score       Int
-  status      MatchStatus @default(PENDING)
+  status      String     @default("PENDING")
   createdAt   DateTime    @default(now())
   updatedAt   DateTime    @updatedAt
   @@unique([lostItemId, foundItemId])
@@ -162,7 +118,7 @@ model Claim {
   reviewerId         String?
   reviewer           User?       @relation("ClaimReviewer", fields: [reviewerId], references: [id])
   verificationAnswer String
-  status             ClaimStatus @default(PENDING)
+  status             String     @default("PENDING")
   createdAt          DateTime    @default(now())
   updatedAt          DateTime    @updatedAt
   @@index([itemId, status])
@@ -215,7 +171,7 @@ model Report {
   reporter       User         @relation("ReportReporter", fields: [reporterId], references: [id], onDelete: Cascade)
   reportedUserId String?
   reportedUser   User?        @relation("ReportedUser", fields: [reportedUserId], references: [id], onDelete: Cascade)
-  reason         ReportReason
+  reason         String
   details        String?
   status         String       @default("PENDING")
   resolvedAt     DateTime?

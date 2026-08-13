@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma, ItemType, ItemStatus } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { requireAdminApi } from "@/lib/admin";
 import { db } from "@/lib/db";
 
@@ -15,8 +15,8 @@ export async function GET(req: NextRequest) {
   const take = Math.min(Math.max(parseInt(searchParams.get("take") || "50", 10), 1), 100);
 
   const where: Prisma.ItemWhereInput = {};
-    if (type !== "ALL") where.type = type as unknown as ItemType;
-  if (status !== "ALL") where.status = status as unknown as ItemStatus;
+    if (type !== "ALL") where.type = type;
+    if (status !== "ALL") where.status = status;
   if (flagged === "true") where.flagged = true;
   if (flagged === "false") where.flagged = false;
   if (q) {

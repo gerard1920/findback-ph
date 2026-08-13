@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
-import { Prisma, ItemType, ItemStatus } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { db } from "@/lib/db";
 import { PostRow } from "@/components/admin-post-row";
 
@@ -15,8 +15,8 @@ export default async function AdminPostsPage({
   const q = ((sp?.q as string) || "").trim();
 
   const where: Prisma.ItemWhereInput = {};
-  if (type !== "ALL") where.type = type as ItemType;
-  if (status !== "ALL") where.status = status as ItemStatus;
+  if (type !== "ALL") where.type = type;
+  if (status !== "ALL") where.status = status;
   if (flagged === "true") where.flagged = true;
   if (flagged === "false") where.flagged = false;
   if (q) {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { Prisma, UserStatus, Role } from "@prisma/client";
+import { Prisma } from "@prisma/client";
 import { requireAdminApi } from "@/lib/admin";
 import { db } from "@/lib/db";
 
@@ -24,8 +24,8 @@ export async function GET(req: NextRequest) {
       { email: { contains: q.toLowerCase() } },
     ];
   }
-  if (status !== "ALL") where.status = status as unknown as UserStatus;
-  if (role !== "ALL") where.role = role as unknown as Role;
+  if (status !== "ALL") where.status = status;
+  if (role !== "ALL") where.role = role;
 
   // Deterministic, admin-agnostic ordering: admins first (role desc), then
   // most recently created.  This guarantees every admin sees the exact same

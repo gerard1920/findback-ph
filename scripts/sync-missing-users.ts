@@ -25,7 +25,7 @@
 
 import { randomBytes } from "crypto";
 import bcrypt from "bcryptjs";
-import { PrismaClient, Role, UserStatus } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 
 const prisma = new PrismaClient();
 
@@ -33,8 +33,8 @@ type MissingUserSpec = {
   email: string;
   displayName: string;
   username: string;
-  role?: Role;
-  status?: UserStatus;
+  role?: string;
+  status?: string;
 };
 
 const MISSING_USERS: MissingUserSpec[] = [

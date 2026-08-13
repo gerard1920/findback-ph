@@ -1,5 +1,5 @@
 export const dynamic = "force-dynamic";
-import { ItemStatus } from "@prisma/client";
+import type { ItemStatus } from "@prisma/client";
 import { requireAdmin } from "@/lib/admin";
 import { describeAdminAction } from "@/lib/admin";
 import { db } from "@/lib/db";

@@ -11,7 +11,7 @@
  *   npx tsx scripts/ensure-admin-consistency.ts
  */
 
-import { PrismaClient, Role, UserStatus } from "@prisma/client";
+import { PrismaClient } from "@prisma/client";
 import {
   STANDARD_ADMIN_DEFAULTS,
   computeAdminNormalization,
@@ -24,8 +24,8 @@ type AdminRow = {
   email: string;
   displayName: string;
   username: string;
-  role: Role;
-  status: UserStatus;
+  role: string;
+  status: string;
   notifyOnCommentEmail: boolean;
   notifyOnCommentInApp: boolean;
   notifyOnClaimEmail: boolean;
