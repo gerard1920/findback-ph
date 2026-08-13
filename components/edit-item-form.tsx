@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useState, useTransition } from "react";
+import { useActionState, useRef, useState, useTransition } from "react";
 import { updateItem, FormState } from "@/app/actions";
 
 const initialState: FormState = {};
@@ -39,6 +39,8 @@ export function EditItemForm({
   const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
   const [uploading, startUploading] = useTransition();
 
+  const fileRef = useRef<HTMLInputElement>(null);
+
   async function handleImages(files: FileList | null) {
     if (!files?.length) return;
     const selected = Array.from(files).slice(0, 5 - uploadedUrls.length);
@@ -55,6 +57,7 @@ export function EditItemForm({
       }
       const data = (await res.json()) as { urls: string[] };
       setUploadedUrls((prev) => [...prev, ...data.urls]);
+      if (fileRef.current) fileRef.current.value = "";
     });
   }
 
@@ -90,6 +93,7 @@ export function EditItemForm({
       <label className="col-span-full">
         <span className="label">Add more photos (optional)</span>
         <input
+          ref={fileRef}
           type="file"
           accept="image/jpeg,image/png,image/webp"
           multiple

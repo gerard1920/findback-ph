@@ -80,13 +80,13 @@ export function EnhancedReportForm({
 
   async function addImageFile(files: FileList | null) {
     if (!files || files.length === 0) return;
-    const arr = Array.from(files)
-      .filter(
-        (f) =>
-          ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(f.type) &&
-          f.size <= 5 * 1024 * 1024
-      )
-      .slice(0, 5 - images.length - uploadedImageUrls.length);
+      const arr = Array.from(files)
+        .filter(
+          (f) =>
+            ["image/jpeg", "image/png", "image/webp", "image/gif"].includes(f.type) &&
+            f.size <= 5 * 1024 * 1024
+        )
+        .slice(0, 5 - images.length);
 
     if (!arr.length) return;
 
@@ -101,6 +101,7 @@ export function EnhancedReportForm({
     const data = (await res.json()) as { urls: string[] };
     setUploadedImageUrls((prev) => [...prev, ...data.urls]);
     setImages((prev) => [...prev, ...data.urls.map((url) => ({ url, alt: "Uploaded image" }))]);
+    if (fileRef.current) fileRef.current.value = "";
   }
 
   function addImageUrl(url: string) {
