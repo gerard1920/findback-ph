@@ -24,6 +24,9 @@ export default async function AdminUsersPage({
   if (status !== "ALL") where.status = status as UserStatus;
   if (role !== "ALL") where.role = role as Role;
 
+  // Deterministic, admin-agnostic ordering: admins pinned to the top, then
+  // most recently created.  This makes the list identical no matter which
+  // admin is viewing it (matches the API endpoint's ordering).
   const users = await db.user.findMany({
     where,
     select: {
@@ -42,7 +45,10 @@ export default async function AdminUsersPage({
         select: { action: true, reason: true, createdAt: true },
       },
     },
-    orderBy: { createdAt: "desc" },
+    orderBy: [
+      { role: "desc" },
+      { createdAt: "desc" },
+    ],
     take: 100,
   });
 

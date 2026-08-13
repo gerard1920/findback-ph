@@ -4,15 +4,17 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "tsx scripts/setup-db-provider.ts && prisma generate && prisma db push && tsx scripts/seed-categories.ts",
+    "prebuild": "tsx scripts/setup-db-provider.ts && prisma generate && prisma db push && tsx scripts/seed-categories.ts && tsx prisma/seed.ts && tsx scripts/ensure-admin-consistency.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:seed": "prisma db seed",
-    "db:setup:local": "tsx scripts/setup-db-provider.ts && npx prisma migrate deploy && npx prisma db seed",
-    "db:setup:production": "DATABASE_URL=$DATABASE_URL tsx scripts/setup-db-provider.ts && npx prisma migrate deploy && npx prisma db seed"
+    "db:setup:local": "tsx scripts/setup-db-provider.ts && npx prisma migrate deploy && npx prisma db seed && npx tsx scripts/ensure-admin-consistency.ts",
+    "db:setup:production": "DATABASE_URL=$DATABASE_URL tsx scripts/setup-db-provider.ts && npx prisma migrate deploy && npx prisma db seed && npx tsx scripts/ensure-admin-consistency.ts",
+    "admin:consistency": "npx tsx scripts/ensure-admin-consistency.ts",
+    "admin:list-users": "npx tsx scripts/list-all-users.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

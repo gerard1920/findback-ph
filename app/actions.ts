@@ -9,7 +9,7 @@ import { clearSession, currentUser, requireUser, setSession } from "@/lib/auth";
 import { generateMatches } from "@/lib/matching";
 import { isUuid, sha256 } from "@/lib/crypto";
 import { sendPasswordResetEmail, isAnyEmailConfigured, shouldExposeResetLink } from "@/lib/mail";
-import { logAdmin } from "@/lib/admin";
+import { logAdmin, STANDARD_ADMIN_DEFAULTS, ensureAllAdminsNormalized } from "@/lib/admin";
 import { saveUploadedFile } from "@/lib/storage";
 import type { ReportReason } from "@prisma/client";
 export type FormState={error?:string;success?:string};
@@ -144,6 +144,9 @@ export async function deleteUser(userId: string) {
 async function adminActor() {
   const u = await requireUser();
   if (u.role !== "ADMIN") throw new Error("FORBIDDEN");
+  // Guarantee admin normalization also runs on mutations, not just page/API reads.
+  // (best-effort — never block the mutation itself if the DB is having a blip.)
+  try { await ensureAllAdminsNormalized(); } catch {}
   return u;
 }
 
@@ -208,13 +211,35 @@ export async function adminSetUserRole(userId: string, role: "USER" | "ADMIN") {
   if (admin.id === userId && role !== "ADMIN") throw new Error("FORBIDDEN");
   const target = await db.user.findUnique({ where: { id: userId }, select: { role: true } });
   if (!target) throw new Error("NOT_FOUND");
-  await db.user.update({ where: { id: userId }, data: { role } });
+
+  if (role === "ADMIN") {
+    // Promoting to ADMIN: apply STANDARD_ADMIN_DEFAULTS so the new admin
+    // gets the exact same field structure as every other admin.  This
+    // guarantees that any user promoted via "Make admin" in the UI sees
+    // the same dataset and behaves identically to existing admins.
+    // (We destructure role out of the spread to avoid a duplicate-key error
+    // since `role` already appears in the update payload.)
+    const { role: _roleFromDefaults, ...adminPrefs } = STANDARD_ADMIN_DEFAULTS;
+    await db.user.update({
+      where: { id: userId },
+      data: { role, ...adminPrefs },
+    });
+  } else {
+    // Revoking admin: keep USER status defaults — notification prefs are
+    // left alone so the user's settings aren't destroyed on demotion.
+    await db.user.update({ where: { id: userId }, data: { role } });
+  }
+
+  // After every role change, run one pass of the consistency guard so the
+  // whole admin set is normalized and all admins see identical data.
+  try { await ensureAllAdminsNormalized(); } catch {}
+
   await logAdmin({
     adminId: admin.id,
     action: role === "ADMIN" ? "MAKE_ADMIN" : "REVOKE_ADMIN",
     targetType: "USER",
     targetId: userId,
-    reason: role === "ADMIN" ? "Promoted to administrator" : "Administrator access revoked",
+    reason: role === "ADMIN" ? "Promoted to administrator (standardized admin profile applied)" : "Administrator access revoked",
   });
   redirect("/admin/users");
 }

@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { currentUser } from "@/lib/auth";
+import { requireAdminApi } from "@/lib/admin";
 import { db } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
-  const me = await currentUser();
-  if (!me || me.role !== "ADMIN") return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  const me = await requireAdminApi();
+  if (!me) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   const limit = Math.min(Math.max(parseInt(new URL(req.url).searchParams.get("limit") || "15", 10), 1), 50);
 

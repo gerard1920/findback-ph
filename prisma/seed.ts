@@ -1,5 +1,6 @@
-import { ItemType, Role, PrismaClient } from "@prisma/client";
+import { ItemType, PrismaClient } from "@prisma/client";
 import bcrypt from "bcryptjs";
+import { STANDARD_ADMIN_DEFAULTS } from "@/lib/admin";
 
 const db = new PrismaClient();
 
@@ -30,30 +31,39 @@ async function main() {
     });
   }
 
-    const hash = await bcrypt.hash("DemoPass123!", 12);
+  const demoHash = await bcrypt.hash("DemoPass123!", 12);
 
+  // Demo user (standard customer) — capture returned id for item seeding.
   const user = await db.user.upsert({
     where: { email: "demo@findback.local" },
     update: {},
     create: {
       email: "demo@findback.local",
-      passwordHash: hash,
+      passwordHash: demoHash,
       displayName: "Demo User (development)",
       username: "findbackdemo",
     },
+    select: { id: true },
   });
 
-      // First administrator account (development bootstrap).
+  // Standardized administrator account (development bootstrap).
+  // Uses STANDARD_ADMIN_DEFAULTS so every admin — regardless of how it's
+  // created (seed, promote, first-user) — has identical fields.
   const adminHash = await bcrypt.hash("Admin@2024!", 12);
+  const adminData = {
+    email: "admin@findback.ph",
+    passwordHash: adminHash,
+    displayName: "FindBack Admin",
+    username: "findbackadmin",
+    ...STANDARD_ADMIN_DEFAULTS,
+  } as const;
   await db.user.upsert({
-    where: { email: "admin@findback.ph" },
-    update: { role: Role.ADMIN, status: "ACTIVE", passwordHash: adminHash, displayName: "FindBack Admin" },
+    where: { email: adminData.email },
+    update: {
+      ...adminData,
+    },
     create: {
-      email: "admin@findback.ph",
-      passwordHash: adminHash,
-      displayName: "FindBack Admin",
-      username: "findbackadmin",
-      role: Role.ADMIN,
+      ...adminData,
     },
   });
 

@@ -1,11 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Prisma, ReportReason } from "@prisma/client";
-import { currentUser } from "@/lib/auth";
+import { requireAdminApi } from "@/lib/admin";
 import { db } from "@/lib/db";
 
 export async function GET(req: NextRequest) {
-  const me = await currentUser();
-  if (!me || me.role !== "ADMIN") return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
+  const me = await requireAdminApi();
+  if (!me) return NextResponse.json({ error: "FORBIDDEN" }, { status: 403 });
 
   const { searchParams } = new URL(req.url);
   const status = searchParams.get("status") || "PENDING";
