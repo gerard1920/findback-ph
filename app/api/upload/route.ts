@@ -2,11 +2,8 @@ import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
 import { saveUploadedFile } from "@/lib/storage";
 
-export const config = {
-  api: {
-    bodyParser: false,
-  },
-};
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
 
 export async function POST(request: Request) {
   try {
@@ -26,8 +23,9 @@ export async function POST(request: Request) {
 
     return NextResponse.json({ urls });
   } catch (err) {
+    console.error("[api/upload]", err);
     return NextResponse.json(
-      { error: err instanceof Error ? err.message : "Upload failed." },
+      { error: err instanceof Error && err.message.startsWith("Unsupported") ? err.message : err instanceof Error && err.message.startsWith("File too") ? err.message : "Upload failed." },
       { status: 500 }
     );
   }

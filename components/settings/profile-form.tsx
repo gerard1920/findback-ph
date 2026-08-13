@@ -101,10 +101,11 @@ export function ProfileForm({ initial }: Props) {
       className="max-w-3xl grid gap-5 sm:grid-cols-2"
     >
       <input type="hidden" name="displayName" value={values.displayName} />
-      <input type="hidden" name="phone" value={values.phone} />
-      <input type="hidden" name="city" value={values.city} />
-      <input type="hidden" name="province" value={values.province} />
+      <input type="hidden" name="phoneNumber" value={values.phone} />
+      <input type="hidden" name="preferredCity" value={values.city} />
+      <input type="hidden" name="preferredProvince" value={values.province} />
       <input type="hidden" name="campus" value={values.campus} />
+      <input type="hidden" name="avatarUrl" value={values.avatarUrl ?? ""} />
 
       <div className="sm:col-span-2 flex flex-col items-start gap-4 rounded-2xl border border-indigo-200 bg-indigo-50 p-5 sm:flex-row sm:items-center">
         <div className="h-20 w-20 shrink-0 overflow-hidden rounded-2xl bg-gradient-to-br from-indigo-500 via-violet-500 to-fuchsia-500 ring-2 ring-white shadow-md">

@@ -10,6 +10,7 @@ import { generateMatches } from "@/lib/matching";
 import { isUuid, sha256 } from "@/lib/crypto";
 import { sendPasswordResetEmail, isAnyEmailConfigured, shouldExposeResetLink } from "@/lib/mail";
 import { logAdmin } from "@/lib/admin";
+import { saveUploadedFile } from "@/lib/storage";
 import type { ReportReason } from "@prisma/client";
 export type FormState={error?:string;success?:string};
 export async function register(_:FormState,fd:FormData):Promise<FormState>{
@@ -83,7 +84,6 @@ export async function login(_:FormState,fd:FormData):Promise<FormState>{
   }
 }
 export async function logout(){await clearSession();redirect("/")}
-export async function createItem(type:"LOST"|"FOUND",_:FormState,fd:FormData):Promise<FormState>{try{const user=await requireUser();const parsed=itemSchema.safeParse(Object.fromEntries(fd));if(!parsed.success)return{error:"Please complete all required fields correctly."};const newUrls=fd.getAll("newImageUrls").filter((v):v is string=>typeof v==="string"&&v.length>0);const {images:_img,...data}=parsed.data;const item=await db.item.create({data:{...data,type,ownerId:user.id,privateSerial:data.privateSerial||null,brand:data.brand||null,color:data.color||null,barangay:data.barangay||null,distinguishingFeatures:data.distinguishingFeatures||null,reward:data.reward||null,privateProof:data.privateProof||null}});if(newUrls.length){await db.itemImage.createMany({data:newUrls.map(url=>({itemId:item.id,url,alt:item.title}))})}await generateMatches(item.id);redirect(`/items/${item.id}`)}catch(err){if(err instanceof Error && err.message==="NEXT_REDIRECT")throw err;return{error:err instanceof Error?err.message:"Failed to create report."}}}
 export async function saveItem(itemId:string){const user=await requireUser();await db.savedItem.upsert({where:{userId_itemId:{userId:user.id,itemId}},create:{userId:user.id,itemId},update:{}})}
 export async function reportItem(_prev: FormState, fd: FormData): Promise<FormState> {
   try {
@@ -108,7 +108,7 @@ export async function startConversation(itemId:string){const user=await currentU
 export async function sendMessage(conversationId:string,fd:FormData){const user=await requireUser();const conversation=await db.conversation.findUnique({where:{id:conversationId}});if(!conversation||(conversation.participantAId!==user.id&&conversation.participantBId!==user.id))throw new Error("UNAUTHORIZED");const otherId=conversation.participantAId===user.id?conversation.participantBId:conversation.participantAId;const blocked=await db.block.findFirst({where:{OR:[{blockerId:otherId,blockedId:user.id},{blockerId:user.id,blockedId:otherId}]}});if(blocked)throw new Error("You cannot send messages to this user.");const body=String(fd.get("body")||"").trim();if(!body)redirect(`/messages/${conversationId}`);if(body.length>2000)throw new Error("Message too long");await db.message.create({data:{conversationId,senderId:user.id,body}});await db.notification.create({data:{userId:otherId,title:"New message",body:`${user.displayName} sent you a message.`,link:`/messages/${conversationId}`}});redirect(`/messages/${conversationId}`)}
 export async function unsaveItem(itemId:string){const user=await requireUser();await db.savedItem.deleteMany({where:{userId:user.id,itemId}})}
 export async function claimItem(itemId:string,fd:FormData){const user=await requireUser();const item=await db.item.findUnique({where:{id:itemId},select:{id:true,type:true,status:true,ownerId:true,title:true}});const answer=String(fd.get("answer")||"").trim();if(!item||item.type!=="FOUND"||item.ownerId===user.id||!["ACTIVE","MATCHED"].includes(item.status)||answer.length<10||answer.length>1000)redirect(`/items/${itemId}`);const dup=await db.claim.findFirst({where:{itemId:item.id,claimantId:user.id,status:{in:["PENDING","UNDER_REVIEW","APPROVED"]}}});if(!dup){await db.claim.create({data:{itemId:item.id,claimantId:user.id,verificationAnswer:answer}});await db.notification.create({data:{userId:item.ownerId,title:"New ownership claim",body:`${user.displayName} submitted a claim for ${item.title}.`,link:"/dashboard/claims"}})}redirect(`/items/${itemId}`)}
-export async function updateItem(itemId:string,_:FormState,fd:FormData):Promise<FormState>{try{const user=await requireUser();const item=await db.item.findUnique({where:{id:itemId}});if(!item||item.ownerId!==user.id)return{error:"You can only edit reports you own."};const parsed=itemSchema.safeParse(Object.fromEntries(fd));if(!parsed.success)return{error:"Please complete all required fields correctly."};const removeIds=fd.getAll("removeImage").filter((v):v is string=>typeof v==="string");const newUrls=fd.getAll("newImageUrls").filter((v):v is string=>typeof v==="string"&&v.length>0);const {images:_img, ...data}=parsed.data;await db.item.update({where:{id:item.id},data:{...data,privateSerial:data.privateSerial||null,brand:data.brand||null,color:data.color||null,barangay:data.barangay||null,distinguishingFeatures:data.distinguishingFeatures||null,privateProof:data.privateProof||null,reward:data.reward||null}});if(removeIds.length)await db.itemImage.deleteMany({where:{id:{in:removeIds},itemId:item.id}});if(newUrls.length){await db.itemImage.createMany({data:newUrls.map(url=>({itemId:item.id,url,alt:data.title}))})}await generateMatches(item.id);redirect(`/items/${item.id}`)}catch(err){if(err instanceof Error && err.message==="NEXT_REDIRECT")throw err;return{error:err instanceof Error?err.message:"Failed to update report."}}}
+export async function updateItem(itemId:string,_:FormState,fd:FormData):Promise<FormState>{try{const user=await requireUser();const item=await db.item.findUnique({where:{id:itemId}});if(!item||item.ownerId!==user.id)return{error:"You can only edit reports you own."};const parsed=itemSchema.safeParse(Object.fromEntries(fd));if(!parsed.success)return{error:"Please complete all required fields correctly."};const removeIds=fd.getAll("removeImage").filter((v):v is string=>typeof v==="string");const rawFiles=fd.getAll("images").filter((v):v is File=>v instanceof File&&v.size>0);const newUrls=fd.getAll("newImageUrls").filter((v):v is string=>typeof v==="string"&&v.length>0);if(rawFiles.length+newUrls.length>5)return{error:"You can upload a maximum of 5 images."};const uploaded:string[]=[];for(const f of rawFiles){uploaded.push(await saveUploadedFile(f))}const allUrls=[...uploaded,...newUrls];const data=parsed.data;await db.item.update({where:{id:item.id},data:{...data,privateSerial:data.privateSerial??null,brand:data.brand??null,color:data.color??null,barangay:data.barangay??null,distinguishingFeatures:data.distinguishingFeatures??null,privateProof:data.privateProof??null,reward:data.reward??null}});if(removeIds.length)await db.itemImage.deleteMany({where:{id:{in:removeIds},itemId:item.id}});if(allUrls.length){await db.itemImage.createMany({data:allUrls.map(url=>({itemId:item.id,url,alt:data.title}))})}await generateMatches(item.id);redirect(`/items/${item.id}`)}catch(err){if(err instanceof Error&&err.message==="NEXT_REDIRECT")throw err;console.error("[updateItem]",err);return{error:"Unable to save changes to your report. Please try again."}}}
 export async function deleteItem(itemId:string){const user=await requireUser();await db.item.updateMany({where:{id:itemId,ownerId:user.id},data:{status:"REMOVED"}});redirect("/dashboard")}
 export async function reviewClaim(claimId:string,action:"APPROVED"|"REJECTED"){const user=await requireUser();const claim=await db.claim.findUnique({where:{id:claimId}});if(!claim||(action!=="APPROVED"&&action!=="REJECTED"))redirect("/dashboard/claims");const item=await db.item.findUnique({where:{id:claim.itemId},select:{id:true,ownerId:true,title:true,status:true}});if(!item||item.ownerId!==user.id)redirect("/dashboard/claims");if(claim.status==="PENDING"||claim.status==="UNDER_REVIEW"){if(action==="APPROVED"&&!["RESOLVED","REMOVED"].includes(item.status)){await db.claim.update({where:{id:claim.id},data:{status:"APPROVED"}});await db.item.update({where:{id:item.id},data:{status:"CLAIM_PENDING"}});await db.notification.create({data:{userId:claim.claimantId,title:"Claim approved",body:`Your claim for ${item.title} was approved. Coordinate a safe handover with the reporter.`,link:`/items/${item.id}`}})}else if(action==="REJECTED"){await db.claim.update({where:{id:claim.id},data:{status:"REJECTED"}});await db.notification.create({data:{userId:claim.claimantId,title:"Claim declined",body:`Your claim for ${item.title} was not approved.`,link:`/items/${item.id}`}})}}redirect("/dashboard/claims")}
 
@@ -576,26 +576,25 @@ export type ProfileState = FormState & {
 export async function updateProfile(_prev: ProfileState, fd: FormData): Promise<ProfileState> {
   const user = await requireUser();
   try {
-    const displayName = fd.get("displayName")?.toString().trim();
+    const normalizeOpt = (v: unknown) => {
+      const s = String(v ?? "").trim();
+      return s.length > 0 ? s : null;
+    };
+    const displayName = normalizeOpt(fd.get("displayName") ?? fd.get("displayNameDisplay"));
     if (!displayName || displayName.length < 2) {
       return { error: "Display name must be at least 2 characters." };
     }
     if (displayName.length > 60) {
       return { error: "Display name must be 60 characters or less." };
     }
-    const phoneRaw = fd.get("phoneNumber")?.toString().trim();
-    const phoneNumber = phoneRaw && phoneRaw.length > 0 ? phoneRaw : null;
+    const phoneNumber = normalizeOpt(fd.get("phoneNumber") ?? fd.get("phone") ?? fd.get("phoneDisplay"));
     if (phoneNumber && phoneNumber.length < 7) {
       return { error: "Please enter a valid phone number." };
     }
-    const campusRaw = fd.get("campus")?.toString().trim();
-    const campus = campusRaw && campusRaw.length > 0 ? campusRaw : null;
-    const provinceRaw = fd.get("preferredProvince")?.toString().trim();
-    const preferredProvince = provinceRaw && provinceRaw.length > 0 ? provinceRaw : null;
-    const cityRaw = fd.get("preferredCity")?.toString().trim();
-    const preferredCity = cityRaw && cityRaw.length > 0 ? cityRaw : null;
-    const avatarRaw = fd.get("avatarUrl")?.toString().trim();
-    const avatarUrl = avatarRaw && avatarRaw.length > 0 ? avatarRaw : null;
+    const campus = normalizeOpt(fd.get("campus") ?? fd.get("campusDisplay"));
+    const preferredProvince = normalizeOpt(fd.get("preferredProvince") ?? fd.get("province") ?? fd.get("provinceDisplay"));
+    const preferredCity = normalizeOpt(fd.get("preferredCity") ?? fd.get("city") ?? fd.get("cityDisplay"));
+    const avatarUrl = normalizeOpt(fd.get("avatarUrl"));
 
     const updated = await db.user.update({
       where: { id: user.id },
@@ -759,38 +758,43 @@ export async function createItemReport(_prev: FormState, fd: FormData): Promise<
     });
 
     const files = fd.getAll("images").filter((v): v is File => v instanceof File && v.size > 0);
-    const allowed = new Set(["image/jpeg", "image/png", "image/webp"]);
-    if (files.length > 5) return { error: "You can upload a maximum of 5 images." };
+    const allowed = new Set(["image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif"]);
     if (files.some((f) => f.size > 5 * 1024 * 1024 || !allowed.has(f.type))) {
-      return { error: "Images must be JPG, PNG, or WebP and no larger than 5 MB each." };
+      return { error: "Images must be JPG, PNG, WebP, or GIF and no larger than 5 MB each." };
     }
-
     const newUrls = fd.getAll("newImageUrls").filter((v): v is string => typeof v === "string" && v.length > 0);
-    if (newUrls.length > 5) return { error: "You can upload a maximum of 5 images." };
-    for (const url of newUrls) {
-      await db.itemImage.create({ data: { itemId: item.id, url, alt: `${title} image` } });
-    }
 
-    const imagesJson = fd.get("imageUrls")?.toString();
-    if (imagesJson) {
+    const imageUrlsJson = fd.get("imageUrls")?.toString();
+    let extraUrls: string[] = [];
+    if (imageUrlsJson) {
       try {
-        const urls = JSON.parse(imagesJson) as string[];
-        if (Array.isArray(urls) && urls.length > 0) {
-          for (const url of urls) {
-            if (typeof url === "string" && url.length > 0 && !url.startsWith("blob:")) {
-              await db.itemImage.create({
-                data: { itemId: item.id, url, alt: `${title} image` },
-              });
-            }
-          }
+        const parsed = JSON.parse(imageUrlsJson) as unknown;
+        if (Array.isArray(parsed)) {
+          extraUrls = parsed.filter(
+            (u): u is string => typeof u === "string" && u.length > 0 && !u.startsWith("blob:"),
+          );
         }
       } catch {
         // ignore bad images json
       }
     }
+
+    if (files.length + newUrls.length + extraUrls.length > 5) {
+      return { error: "You can upload a maximum of 5 images." };
+    }
+
+    const uploaded: string[] = [];
+    for (const f of files) uploaded.push(await saveUploadedFile(f));
+
+    const allImageUrls = [...uploaded, ...newUrls, ...extraUrls];
+    for (const url of allImageUrls) {
+      await db.itemImage.create({ data: { itemId: item.id, url, alt: `${title} image` } });
+    }
+
     redirect(`/items/${item.id}`);
   } catch (err) {
     if (err instanceof Error && err.message === "NEXT_REDIRECT") throw err;
-    return { error: err instanceof Error ? err.message : "Failed to create report." };
+    console.error("[createItemReport]", err);
+    return { error: "Unable to save your report. Please double-check the details and try again." };
   }
 }

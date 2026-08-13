@@ -115,8 +115,6 @@ export function ItemCard({ item, mine }: { item: CardItem; mine?: boolean }) {
           <Image
             src={item.images[0].url}
             alt={item.title}
-            width={800}
-            height={500}
             fill
             className="object-cover transition-transform duration-500 ease-out group-hover:scale-105"
             sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
