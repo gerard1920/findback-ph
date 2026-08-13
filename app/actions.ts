@@ -60,7 +60,7 @@ export async function register(_:FormState,fd:FormData):Promise<FormState>{
   }catch{
     return{error:"An account already exists with that email."};
   }
-  redirect("/settings");
+  redirect("/");
 }
 export async function login(_:FormState,fd:FormData):Promise<FormState>{
   try {

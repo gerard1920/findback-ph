@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "prebuild": "tsx scripts/setup-db-provider.ts && prisma generate && prisma db push && tsx scripts/seed-categories.ts && tsx prisma/seed.ts && tsx scripts/ensure-admin-consistency.ts",
+    "prebuild": "tsx scripts/prebuild.ts",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
@@ -30,6 +30,7 @@
     "mysql2": "^3.23.3",
     "next": "^15.4.4",
     "nodemailer": "^9.0.5",
+    "pg": "^8.23.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "resend": "^6.18.1",

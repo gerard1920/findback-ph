@@ -52,7 +52,7 @@ export function AuthForm({ initialMode = "login" }: { initialMode?: Mode }) {
         description: state.success + " Redirecting…",
         durationMs: 2600,
       });
-      const goto = mode === "login" ? next : "/settings";
+      const goto = mode === "login" ? next : "/";
       const t = window.setTimeout(() => router.push(goto), 700);
       return () => window.clearTimeout(t);
     }

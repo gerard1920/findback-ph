@@ -1,10 +1,9 @@
 export const dynamic = "force-dynamic";
-import Link from "next/link";
-import { ShieldCheck, BarChart3, History, Users } from "lucide-react";
 import { ItemStatus } from "@prisma/client";
 import { requireAdmin } from "@/lib/admin";
 import { describeAdminAction } from "@/lib/admin";
 import { db } from "@/lib/db";
+import { AdminStatsCards } from "@/components/admin-stats-cards";
 
 const ACTIVE: ItemStatus[] = ["ACTIVE", "MATCHED", "CLAIM_PENDING"];
 
@@ -67,18 +66,6 @@ export default async function AdminHome() {
   const stats = await loadStats();
   const logs = await loadLogs();
 
-  const statCards: Array<{ label: string; value: number; icon: React.ReactNode; href?: string; accent: string }> = [
-    { label: "Total users", value: stats.users, icon: <Users size={16} />, href: "/admin/users", accent: "text-indigo-700 bg-indigo-50 ring-indigo-200" },
-    { label: "Administrators", value: stats.admins, icon: <ShieldCheck size={16} />, href: "/admin/users", accent: "text-violet-700 bg-violet-50 ring-violet-200" },
-    { label: "Banned users", value: stats.bannedUsers, icon: <BarChart3 size={16} />, href: "/admin/users?status=BANNED", accent: "text-rose-700 bg-rose-50 ring-rose-200" },
-    { label: "Suspended users", value: stats.suspendedUsers, icon: <BarChart3 size={16} />, href: "/admin/users?status=SUSPENDED", accent: "text-amber-700 bg-amber-50 ring-amber-200" },
-    { label: "Active posts", value: stats.activeItems, icon: <BarChart3 size={16} />, href: "/admin/posts", accent: "text-emerald-700 bg-emerald-50 ring-emerald-200" },
-    { label: "Active lost", value: stats.lostActive, icon: <BarChart3 size={16} />, href: "/admin/posts?type=LOST", accent: "text-orange-700 bg-orange-50 ring-orange-200" },
-    { label: "Active found", value: stats.foundActive, icon: <BarChart3 size={16} />, href: "/admin/posts?type=FOUND", accent: "text-sky-700 bg-sky-50 ring-sky-200" },
-    { label: "Pending reports", value: stats.pendingReports, icon: <History size={16} />, href: "/admin/reports", accent: "text-amber-700 bg-amber-50 ring-amber-200" },
-    { label: "Total reports", value: stats.totalReports, icon: <History size={16} />, href: "/admin/reports", accent: "text-slate-700 bg-slate-100 ring-slate-200" },
-  ];
-
   return (
     <div>
       <div className="flex items-center justify-between">
@@ -89,22 +76,8 @@ export default async function AdminHome() {
       </div>
 
       <h2 className="mt-8 text-lg font-bold text-slate-900">Statistics</h2>
-      <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-        {statCards.map((c) => (
-          <Link
-            key={c.label}
-            href={c.href ?? "/admin"}
-            className="card-hover flex items-center gap-4 p-5"
-          >
-            <div className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl ring-1 ${c.accent}`}>
-              {c.icon}
-            </div>
-            <div className="min-w-0">
-              <p className="text-sm text-slate-600">{c.label}</p>
-              <p className="mt-0.5 text-2xl font-bold text-slate-900">{c.value}</p>
-            </div>
-          </Link>
-        ))}
+      <div data-admin-stats>
+        <AdminStatsCards initialStats={stats} />
       </div>
 
       <h2 className="mt-10 text-lg font-bold text-slate-900">Recent activity</h2>

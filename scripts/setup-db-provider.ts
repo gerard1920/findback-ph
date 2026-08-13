@@ -1,6 +1,9 @@
 import { readFileSync, writeFileSync } from "fs";
 import { join } from "path";
 import { fileURLToPath } from "url";
+import dotenv from "dotenv";
+
+dotenv.config({ path: [".env", ".env.local", ".env.production"] });
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = join(__filename, "..");
