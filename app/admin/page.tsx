@@ -4,7 +4,7 @@ import { describeAdminAction } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { AdminStatsCards } from "@/components/admin-stats-cards";
 
-const ACTIVE = ["ACTIVE", "MATCHED", "CLAIM_PENDING"] as const;
+const ACTIVE = ["ACTIVE", "MATCHED", "CLAIM_PENDING"];
 
 type Stats = {
   users: number;

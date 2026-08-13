@@ -17,7 +17,7 @@ type PostRowProps = {
   post: {
     id: string;
     title: string;
-    type: "LOST" | "FOUND";
+    type: string;
     status: string;
     flagged: boolean;
     city: string | null;

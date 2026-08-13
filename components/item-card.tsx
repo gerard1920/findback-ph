@@ -11,7 +11,7 @@ import { Spinner } from "@/components/ui/spinner";
 export type CardItem = {
   id: string;
   title: string;
-  type: "LOST" | "FOUND";
+  type: string;
   description: string;
   city: string;
   province: string;
@@ -23,7 +23,7 @@ export type CardItem = {
 export type CardItemInput = {
   id: string;
   title: string;
-  type: "LOST" | "FOUND";
+  type: string;
   description: string;
   city: string;
   province: string;

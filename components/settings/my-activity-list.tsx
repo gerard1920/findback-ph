@@ -7,10 +7,10 @@ import { Edit2, Trash2, CheckCircle2, Search, MapPin } from "lucide-react";
 
 export type ActivityItem = {
   id: string;
-  type: "LOST" | "FOUND";
+  type: string;
   title: string;
   description: string;
-  status: "ACTIVE" | "MATCHED" | "CLAIM_PENDING" | "RESOLVED" | "EXPIRED" | "REMOVED";
+  status: string;
   province: string;
   city: string;
   approximateLocation: string;
@@ -19,7 +19,7 @@ export type ActivityItem = {
   images: { id: string; url: string; alt: string | null }[];
 };
 
-const STATUS_BADGE: Record<ActivityItem["status"], { label: string; className: string }> = {
+const STATUS_BADGE: Record<string, { label: string; className: string }> = {
   ACTIVE: { label: "Active", className: "bg-emerald-50 text-emerald-700 ring-1 ring-emerald-200" },
   CLAIM_PENDING: { label: "Pending Verification", className: "bg-amber-50 text-amber-700 ring-1 ring-amber-200" },
   MATCHED: { label: "Possible Match", className: "bg-sky-50 text-sky-700 ring-1 ring-sky-200" },

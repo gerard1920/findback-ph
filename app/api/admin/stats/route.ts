@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { requireAdminApi } from "@/lib/admin";
 import { db } from "@/lib/db";
 
-const ACTIVE = ["ACTIVE", "MATCHED", "CLAIM_PENDING"] as const;
+const ACTIVE = ["ACTIVE", "MATCHED", "CLAIM_PENDING"];
 
 export async function GET() {
   // requireAdminApi runs the admin normalization pass before returning,

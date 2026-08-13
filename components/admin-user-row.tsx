@@ -19,8 +19,8 @@ type UserRowProps = {
     email: string;
     displayName: string;
     username: string;
-    role: "USER" | "ADMIN" | "SUSPENDED";
-    status: "ACTIVE" | "SUSPENDED" | "BANNED";
+    role: string;
+    status: string;
     createdAt: Date;
     _count: { bans: number };
     bans: { action: string; reason: string; createdAt: Date }[];
