@@ -13,6 +13,7 @@ function run(command: string, label: string) {
 
 async function main() {
   console.log("=== FindBack PH Prebuild ===\n");
+  console.log("NOTE: Ensure DATABASE_URL is set to your Supabase PostgreSQL connection string for shared localhost + Vercel access.");
 
   run("tsx scripts/setup-db-provider.ts", "Setup DB provider");
   run("prisma generate", "Generate Prisma Client");
