@@ -1,11 +1,10 @@
 export const dynamic = "force-dynamic";
-import type { ItemStatus } from "@prisma/client";
 import { requireAdmin } from "@/lib/admin";
 import { describeAdminAction } from "@/lib/admin";
 import { db } from "@/lib/db";
 import { AdminStatsCards } from "@/components/admin-stats-cards";
 
-const ACTIVE: ItemStatus[] = ["ACTIVE", "MATCHED", "CLAIM_PENDING"];
+const ACTIVE = ["ACTIVE", "MATCHED", "CLAIM_PENDING"] as const;
 
 type Stats = {
   users: number;

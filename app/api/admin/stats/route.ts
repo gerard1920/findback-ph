@@ -1,9 +1,8 @@
 import { NextResponse } from "next/server";
-import type { ItemStatus } from "@prisma/client";
 import { requireAdminApi } from "@/lib/admin";
 import { db } from "@/lib/db";
 
-const ACTIVE: ItemStatus[] = ["ACTIVE", "MATCHED", "CLAIM_PENDING"];
+const ACTIVE = ["ACTIVE", "MATCHED", "CLAIM_PENDING"] as const;
 
 export async function GET() {
   // requireAdminApi runs the admin normalization pass before returning,
