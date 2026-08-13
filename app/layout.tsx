@@ -6,6 +6,7 @@ import { Navbar } from "@/components/navbar";
 import { currentUser } from "@/lib/auth";
 import { Providers } from "@/components/providers";
 import { AppErrorBoundary } from "@/components/app-error-boundary";
+import { ConsoleBanner } from "@/components/console-banner";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -98,6 +99,7 @@ export default async function RootLayout({
     <html lang="en" className={inter.variable} data-scroll-behavior="smooth">
       <body className="min-h-screen bg-white font-sans text-slate-900 antialiased [font-feature-settings:'cv11','ss01'] selection:bg-indigo-100 selection:text-indigo-900">
         <Providers>
+          <ConsoleBanner />
           <Navbar user={navbarUser} />
           <AppErrorBoundary>
             <main className="flex-1">{children}</main>
