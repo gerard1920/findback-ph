@@ -18,15 +18,22 @@ async function main() {
   run("tsx scripts/setup-db-provider.ts", "Setup DB provider");
   run("prisma generate", "Generate Prisma Client");
 
-  const dbOk = await isDatabaseAvailable();
-  if (dbOk) {
-    run("prisma db push", "Push schema to database");
-    run("tsx scripts/seed-categories.ts", "Seed categories");
-    run("tsx prisma/seed.ts", "Seed users");
-    run("tsx scripts/ensure-admin-consistency.ts", "Ensure admin consistency");
+  const shouldPushSchema = process.env.PRISMA_DB_PUSH === "1";
+  if (shouldPushSchema) {
+    console.log("\n[prebuild] PRISMA_DB_PUSH=1 detected — running schema push and seeds.");
+    const dbOk = await isDatabaseAvailable();
+    if (dbOk) {
+      run("prisma db push", "Push schema to database");
+      run("tsx scripts/seed-categories.ts", "Seed categories");
+      run("tsx prisma/seed.ts", "Seed users");
+      run("tsx scripts/ensure-admin-consistency.ts", "Ensure admin consistency");
+    } else {
+      console.log("\n[prebuild] Database not reachable — skipping db push and seeds.");
+      console.log("[prebuild] Configure DATABASE_URL in .env to enable database operations.\n");
+    }
   } else {
-    console.log("\n[prebuild] Database not reachable — skipping db push and seeds.");
-    console.log("[prebuild] Configure DATABASE_URL in .env to enable database operations.\n");
+    console.log("\n[prebuild] Skipping db push and seeds during build.");
+    console.log("[prebuild] Set PRISMA_DB_PUSH=1 to enable schema push/seeds.\n");
   }
 }
 
