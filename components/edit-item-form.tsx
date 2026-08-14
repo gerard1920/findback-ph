@@ -9,7 +9,7 @@ const initialState: FormState = {};
 type EditImage = { id: string; url: string; alt: string | null };
 type EditItem = {
   id: string;
-  type: "LOST" | "FOUND";
+  type: string;
   title: string;
   categoryId: string;
   brand: string | null;

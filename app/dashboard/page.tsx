@@ -150,7 +150,7 @@ export default async function Dashboard() {
       <div className="mt-10">
         <div className="flex items-center justify-between">
           <h2 className="text-xl font-bold text-slate-900">My reports</h2>
-          <Link href="/dashboard/settings" className="text-sm font-semibold text-indigo-700 hover:text-indigo-900">
+          <Link href="/settings" className="text-sm font-semibold text-indigo-700 hover:text-indigo-900">
             View all
           </Link>
         </div>

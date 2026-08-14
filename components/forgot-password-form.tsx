@@ -41,7 +41,7 @@ export function ForgotPasswordForm() {
   return (
     <div className="w-full max-w-md mx-auto">
       <Link
-        href="/auth"
+        href="/login"
         className="mb-6 inline-flex items-center gap-1.5 text-sm font-semibold text-slate-500 transition hover:text-indigo-700 hover:-translate-x-0.5"
       >
         <ArrowLeft size={16} /> Back to sign in
