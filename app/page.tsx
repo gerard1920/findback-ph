@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Image from "next/image";
 import Link from "next/link";
@@ -87,7 +87,7 @@ const FEATURES: {
   {
     Icon: Gift,
     title: "Flexible reward incentives",
-    body: "Offer a cash reward, a happy meal, a bayad-pasok fare — whatever feels right for the person who returns what’s yours. We never take a cut.",
+    body: "Offer a cash reward, a happy meal, a transport fare — whatever feels right for the person who returns what’s yours. We never take a cut.",
     className: "bg-violet-50 text-violet-700 ring-1 ring-violet-200",
   },
 ];
@@ -102,7 +102,7 @@ const TESTIMONIALS: {
 }[] = [
   {
     quote:
-      "I left my laptop in a UV Express from Cubao to Fairview. I posted it here at 10pm, had 3 match suggestions by midnight, and got it back the next morning after verifying serial number + sticker. Salamat talaga, FindBack!",
+      "I left my laptop in a UV Express from Cubao to Fairview. I posted it here at 10pm, had 3 match suggestions by midnight, and got it back the next morning after verifying serial number + sticker. Thank you, FindBack!",
     name: "Angela Reyes",
     role: "Freelance graphic designer",
     location: "Quezon City",
@@ -581,7 +581,7 @@ export default function Home() {
             Start a post in under 2 minutes
           </span>
           <h2 className="mx-auto mt-5 max-w-3xl text-4xl font-black leading-tight tracking-tight text-white text-balance sm:text-5xl lg:text-6xl">
-            May nawala? May nahanap?
+            Lost something? Found something?
             <span className="block">Huwag nang maghintay.</span>
           </h2>
           <p className="mx-auto mt-5 max-w-2xl text-lg leading-relaxed text-white/85">

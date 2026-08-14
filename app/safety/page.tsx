@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import {
@@ -60,7 +60,7 @@ const SAFE_MEET = [
   {
     Icon: Users,
     title: "Coffee shops during daytime",
-    copy: "Pick a well-lit, busy branch (Starbucks, J.CO, Bo's). Sit where the staff can see both of you. Never meet at 10PM inside a parking lot — kahit sabihin niyang 'mabilisan lang.'",
+    copy: "Pick a well-lit, busy branch (Starbucks, J.CO, Bo's). Sit where the staff can see both of you. Never meet at 10PM inside a parking lot — even if they say it&apos;s just a minute.",
   },
 ];
 
@@ -119,7 +119,7 @@ export default function Safety() {
               </div>
               <div>
                 <h3 className="text-lg font-bold text-amber-950">
-                  This platform is a connector — hindi po ito sanglaan o tindahan.
+                  This platform is a connector — this is not a lending service or a store.
                 </h3>
                 <p className="mt-2 text-[15px] leading-relaxed text-amber-900/90">
                   We do not verify every {`claimant's`} identity, we do not hold items in escrow, and we never
@@ -139,7 +139,7 @@ export default function Safety() {
             Safety features we built into the product.
           </h2>
           <p className="mt-3 text-slate-600">
-            Hindi ka namin hinahayaang mag-isa. Every time you open FindBack PH, these four things are working for you.
+            You&apos;re never alone. Every time you open FindBack PH, these four things are working for you.
           </p>
         </div>
         <div className="mt-10 grid gap-5 sm:grid-cols-2">
@@ -235,7 +235,7 @@ export default function Safety() {
                   Kapit-bisig tayo
                 </span>
                 <h3 className="mt-5 text-3xl font-bold leading-tight tracking-tight sm:text-4xl">
-                  May nakita kang kahina-hinala?
+                  See something suspicious?
                   <br />
                   One tap — we take it from there.
                 </h3>
@@ -257,7 +257,7 @@ export default function Safety() {
                   href="/report/lost"
                   className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/25 bg-white/10 px-6 py-3.5 font-semibold text-white backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/15 active:scale-[0.97]"
                 >
-                  Gumawa ng report
+                  Do ng report
                   <ChevronRight className="h-4 w-4" />
                 </Link>
               </div>

@@ -35,6 +35,31 @@ export default function ReportAbuseClient() {
   const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [errors, setErrors] = useState<Record<string, string | undefined>>({});
 
+  // Draft autosave - restore on mount
+  useEffect(() => {
+    const saved = localStorage.getItem("report_abuse_draft");
+    if (saved) {
+      try {
+        const d = JSON.parse(saved) as { reason?: string; details?: string; contact?: string };
+        if (d.reason) setReason(d.reason);
+        if (d.details) setDetails(d.details);
+        if (d.contact) setContact(d.contact);
+      } catch { /* ignore corrupt draft */ }
+    }
+  }, []);
+
+  // Save draft on changes
+  useEffect(() => {
+    localStorage.setItem("report_abuse_draft", JSON.stringify({ reason, details, contact }));
+  }, [reason, details, contact]);
+
+  // Clear draft on successful submission
+  useEffect(() => {
+    if (state?.success) {
+      localStorage.removeItem("report_abuse_draft");
+    }
+  }, [state?.success]);
+
   useEffect(() => {
     if (state?.success) {
       toast({

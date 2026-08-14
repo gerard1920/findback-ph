@@ -8,9 +8,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { CheckCircle2, AlertCircle, Info, X } from "lucide-react";
+import { CheckCircle2, AlertCircle, Info, AlertTriangle, X } from "lucide-react";
 
-export type ToastVariant = "success" | "error" | "info";
+export type ToastVariant = "success" | "error" | "info" | "warning";
 
 export type Toast = {
   id: string;
@@ -18,6 +18,7 @@ export type Toast = {
   description?: string;
   variant?: ToastVariant;
   durationMs?: number;
+  action?: { label: string; onClick: () => void };
 };
 
 type ToastCtx = {
@@ -87,6 +88,7 @@ function ToastViewport() {
 function iconFor(v: ToastVariant) {
   if (v === "success") return <CheckCircle2 className="h-5 w-5 text-emerald-600" />;
   if (v === "error") return <AlertCircle className="h-5 w-5 text-rose-600" />;
+  if (v === "warning") return <AlertTriangle className="h-5 w-5 text-amber-600" />;
   return <Info className="h-5 w-5 text-indigo-600" />;
 }
 
@@ -102,6 +104,8 @@ function ToastCard({ toast, onClose }: { toast: Toast; onClose: () => void }) {
       ? "border-emerald-200 bg-emerald-50/95"
       : toast.variant === "error"
       ? "border-rose-200 bg-rose-50/95"
+      : toast.variant === "warning"
+      ? "border-amber-200 bg-amber-50/95"
       : "border-indigo-200 bg-indigo-50/95";
 
   return (
@@ -121,6 +125,15 @@ function ToastCard({ toast, onClose }: { toast: Toast; onClose: () => void }) {
             <p className="mt-0.5 text-xs leading-relaxed text-slate-600">{toast.description}</p>
           )}
         </div>
+        {toast.action && (
+          <button
+            type="button"
+            onClick={toast.action.onClick}
+            className="rounded-lg px-2 py-1 text-xs font-semibold text-indigo-700 hover:bg-indigo-100/50"
+          >
+            {toast.action.label}
+          </button>
+        )}
         <button
           type="button"
           onClick={onClose}

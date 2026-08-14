@@ -2,8 +2,9 @@
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { MessageSquare, Clock } from "lucide-react";
+import { MessageSquare, Clock, AlertTriangle } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
+import { fetchWithRetry } from "@/lib/fetch-with-retry";
 
 type Conversation = {
   id: string;
@@ -18,9 +19,10 @@ export default function MessagesPage() {
   const router = useRouter();
   const [items, setItems] = useState<Conversation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetch("/api/messages", { credentials: "same-origin" })
+    useEffect(() => {
+    fetchWithRetry("/api/messages", { credentials: "same-origin", retries: 2 })
       .then(async (r) => {
         if (r.status === 401) {
           router.replace("/login");
@@ -29,9 +31,18 @@ export default function MessagesPage() {
         const data = await r.json();
         if (!r.ok) throw new Error(data.error);
         setItems(data.data?.conversations ?? []);
+        setError(null);
       })
-      .catch(() => setItems([]))
-      .finally(() => setLoading(false));
+      .catch((e) => {
+        if (e instanceof Error && e.name === "AbortError") {
+          setError("Connection timed out after multiple attempts. Please check your connection and try again.");
+        } else {
+          setError("Unable to load messages. Please try again.");
+        }
+      })
+      .finally(() => {
+        setLoading(false);
+      });
   }, [router]);
 
   return (
@@ -41,9 +52,21 @@ export default function MessagesPage() {
         <p className="mt-2 text-slate-600">Communicate privately without sharing your phone number or email.</p>
       </div>
 
-      {loading ? (
+            {loading ? (
         <div className="mt-8 flex justify-center">
           <Spinner size="md" />
+        </div>
+      ) : error ? (
+        <div className="mt-7 card flex flex-col items-center justify-center gap-3 p-10 text-center">
+          <AlertTriangle size={32} className="text-rose-500" />
+                    <h2 className="text-lg font-bold text-slate-900">Couldn&apos;t load messages</h2>
+          <p className="text-sm text-slate-600">{error}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="btn-secondary mt-2 inline-flex items-center gap-1.5"
+          >
+            Try again
+          </button>
         </div>
       ) : items.length ? (
         <div className="mt-7 space-y-3">

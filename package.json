@@ -14,7 +14,8 @@
     "db:setup:local": "tsx scripts/setup-db-provider.ts && npx prisma migrate deploy && npx prisma db seed && npx tsx scripts/ensure-admin-consistency.ts",
     "db:setup:production": "DATABASE_URL=$DATABASE_URL tsx scripts/setup-db-provider.ts && npx prisma migrate deploy && npx prisma db seed && npx tsx scripts/ensure-admin-consistency.ts",
     "admin:consistency": "npx tsx scripts/ensure-admin-consistency.ts",
-    "admin:list-users": "npx tsx scripts/list-all-users.ts"
+    "admin:list-users": "npx tsx scripts/list-all-users.ts",
+    "watch:commit": "node scripts/auto-commit.js"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"
@@ -42,6 +43,7 @@
     "@types/react": "19.2.18",
     "@types/react-dom": "^19.0.2",
     "autoprefixer": "^10.4.20",
+    "chokidar": "^5.0.0",
     "eslint": "^9.17.0",
     "eslint-config-next": "^15.1.0",
     "postcss": "^8.4.49",

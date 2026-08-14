@@ -1,7 +1,8 @@
 "use client";
 import Image from "next/image";
-import { useActionState, useMemo, useRef, useState } from "react";
+import { useActionState, useEffect, useMemo, useRef, useState } from "react";
 import { createItemReport, type FormState } from "@/app/actions";
+import { useToast } from "@/components/ui/toast";
 import {
   Package,
   Hash,
@@ -77,6 +78,55 @@ export function EnhancedReportForm({
   const fileRef = useRef<HTMLInputElement>(null);
 
   const citiesForProvince = useMemo(() => CITIES_BY_PROVINCE[province] ?? [], [province]);
+
+  const { toast } = useToast();
+
+  // Draft autosave - restore on mount
+  const draftKey = `report_draft_${type}`;
+  useEffect(() => {
+    const saved = localStorage.getItem(draftKey);
+    if (saved) {
+      try {
+        const d = JSON.parse(saved) as {
+          province?: string;
+          city?: string;
+          dateOccurred?: string;
+          timeOccurred?: string;
+          uploadedImageUrls?: string[];
+          images?: { url: string; alt?: string }[];
+        };
+        if (d.province) setProvince(d.province);
+        if (d.city) setCity(d.city);
+        if (d.dateOccurred) setDateOccurred(d.dateOccurred);
+        if (d.timeOccurred) setTimeOccurred(d.timeOccurred);
+        if (d.uploadedImageUrls) setUploadedImageUrls(d.uploadedImageUrls);
+        if (d.images) setImages(d.images);
+        toast({
+          variant: "info",
+          title: "Draft restored",
+          description: "We've restored your partially-filled report from your last visit.",
+          durationMs: 5000,
+        });
+      } catch {
+        /* ignore corrupt draft */
+      }
+        }
+  }, [draftKey, toast]);
+
+  // Save draft on changes
+  useEffect(() => {
+    const draft = { province, city, dateOccurred, timeOccurred, uploadedImageUrls, images };
+    localStorage.setItem(draftKey, JSON.stringify(draft));
+  }, [draftKey, province, city, dateOccurred, timeOccurred, uploadedImageUrls, images]);
+
+  // Clear draft on successful submission
+  useEffect(() => {
+    if (state.success) {
+      localStorage.removeItem(draftKey);
+    }
+  }, [state.success, draftKey]);
+
+
 
   async function addImageFile(files: FileList | null) {
     if (!files || files.length === 0) return;

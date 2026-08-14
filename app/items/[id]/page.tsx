@@ -4,9 +4,10 @@ import Image from "next/image";
 import { use, useEffect, useState, useTransition } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, MapPin, ShieldCheck, Tag, Palette, Award, MessageSquare } from "lucide-react";
+import { CalendarDays, MapPin, ShieldCheck, Tag, Palette, Award, MessageSquare, AlertTriangle } from "lucide-react";
 import { useToast } from "@/components/ui/toast";
 import { Spinner } from "@/components/ui/spinner";
+import { fetchWithRetry } from "@/lib/fetch-with-retry";
 import { startConversation } from "@/app/actions";
 
 type Owner = {
@@ -51,24 +52,39 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
   const [loading, setLoading] = useState(true);
   const [pending, startTransition] = useTransition();
 
-  useEffect(() => {
+      useEffect(() => {
     let cancelled = false;
     async function load() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(`/api/items/${encodeURIComponent(id)}`, {
+        const res = await fetchWithRetry(`/api/items/${encodeURIComponent(id)}`, {
           cache: "no-store",
           credentials: "include",
+          retries: 2,
         });
         const data = await res.json();
         if (!res.ok) {
-          if (!cancelled) setError(data.error || "Item not found.");
+          let msg = "Item not found.";
+          if (res.status === 404) {
+            msg = "This item could not be found. It may have been removed.";
+          } else if (res.status === 401) {
+            msg = "Your session has expired. Please log in again.";
+          } else if (res.status === 503) {
+            msg = "Our servers are temporarily unavailable. Please try again in a few minutes.";
+          } else {
+            msg = data.error || "Unable to load this item.";
+          }
+          if (!cancelled) setError(msg);
           return;
         }
         if (!cancelled) setItem(data.data as ItemDetail);
-      } catch {
-        if (!cancelled) setError("Unable to load this item.");
+      } catch (e) {
+        if (e instanceof Error && e.name === "AbortError") {
+          if (!cancelled) setError("Connection timed out after multiple attempts. Please check your connection and try again.");
+        } else {
+          if (!cancelled) setError("Unable to load this item. Please check your connection and try again.");
+        }
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -142,21 +158,42 @@ export default function ItemPage({ params }: { params: Promise<{ id: string }> }
     });
   }
 
-  if (error) {
+    if (error) {
     return (
       <main className="container-page py-20 text-center">
         <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-rose-50 text-rose-600 ring-1 ring-rose-100">
-          <ShieldCheck size={28} />
+          <AlertTriangle size={28} />
         </div>
         <h1 className="text-2xl font-extrabold tracking-tight sm:text-3xl">{error}</h1>
-        <p className="mt-2 text-slate-500">It may have been removed, or the link is incorrect.</p>
+        <p className="mt-2 text-slate-500">
+          {error.includes("log in")
+            ? "Please sign in to continue."
+            : "It may have been removed, or the link is incorrect."}
+        </p>
         <div className="mt-8 flex flex-wrap justify-center gap-3">
-          <Link href="/lost" className="btn-primary">
-            Browse lost items
-          </Link>
-          <Link href="/found" className="btn-secondary">
-            Browse found items
-          </Link>
+          {error.includes("timed out") || error.includes("connection") ? (
+            <button
+              onClick={() => window.location.reload()}
+              className="btn-primary"
+            >
+              Try again
+            </button>
+          ) : null}
+          {error.includes("session") || error.includes("log in") ? (
+            <Link href="/login" className="btn-primary">
+              Log in again
+            </Link>
+          ) : null}
+          {!error.includes("timed out") && !error.includes("connection") && !error.includes("log in") && !error.includes("session") && (
+            <>
+              <Link href="/lost" className="btn-primary">
+                Browse lost items
+              </Link>
+              <Link href="/found" className="btn-secondary">
+                Browse found items
+              </Link>
+            </>
+          )}
         </div>
       </main>
     );

@@ -1,4 +1,7 @@
-"use client";
+﻿"use client";
+
+// auto-commit test: safe small change
+// watcher trigger test
 
 import Link from "next/link";
 import {
@@ -113,24 +116,24 @@ export default function HowItWorks() {
         <div className="mx-auto max-w-3xl text-center">
           <span className="pill pill-indigo inline-flex items-center gap-2 text-sm">
             <Sparkles className="h-4 w-4" />
-            Simpleng 5-hakbang na proseso
+            Simple 5-step process
           </span>
           <h1 className="mt-5 text-balance text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
-            From <span className="stat-num">{`"nasaan na?"`}</span> to <span className="stat-num">{`"nasa akin na."`}</span>
+            From <span className="stat-num">{`"where is it?"`}</span> to <span className="stat-num">{`"it's back."`}</span>
             <br className="hidden sm:block" />
             <span className="text-slate-900">in five clean steps.</span>
           </h1>
           <p className="mt-5 text-lg leading-relaxed text-slate-600 sm:text-xl">
-            Walang kaba, walang kalituhan. Built for everyday Filipinos — UV Express commuters,
+            No stress, no drama. Built for everyday Filipinos — UV Express commuters,
             mall-goers, students, and travelers across 81 provinces.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link href="/report/lost" className="btn-primary btn-primary--violet inline-flex items-center gap-2">
-              I-Report ang nawala
+              Report a Lost Item
               <ArrowRight className="h-4 w-4" />
             </Link>
             <Link href="/report/found" className="btn-primary btn-primary--emerald inline-flex items-center gap-2">
-              I-Post ang nahanap
+              Post a Found Item
               <ChevronRight className="h-4 w-4" />
             </Link>
           </div>
@@ -201,7 +204,7 @@ export default function HowItWorks() {
             Questions, answered simply.
           </h2>
           <p className="mx-auto mt-3 max-w-xl text-slate-600">
-            Kung may kaba ka — normal lang {`'yan. Here's`} the straight answer on the things most users ask first.
+            If you&apos;re feeling anxious — that&apos;s normal {`'yan. Here's`} the straight answer on the things most users ask first.
           </p>
         </div>
         <div className="mt-10 space-y-4">
@@ -229,29 +232,29 @@ export default function HowItWorks() {
             <div className="pointer-events-none absolute inset-0 grid-lines opacity-30" />
             <div className="relative mx-auto max-w-3xl text-center text-white">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium backdrop-blur">
-                ✨ Handa ka na ba?
+                ✨ Ready to get started?
               </span>
               <h3 className="mt-5 text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
-                May nawala? May nahanap?
+                Lost something? Found something?
                 <br />
                 Huwag nang maghintay.
               </h3>
               <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-indigo-100/95 sm:text-lg">
-                Isang post, isang match, isang reunion. Sa halip na mag-post sa 5 Facebook groups at magkagulo sa comments — gamitin ang FindBack PH.
+                One post, one match, one reunion. Instead of posting in 5 Facebook groups and dealing with comment spam — use FindBack PH.
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                 <Link
                   href="/report/lost"
                   className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3.5 font-semibold text-indigo-700 shadow-lg shadow-black/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.97]"
                 >
-                  I-Report ang nawala
+                  Report a Lost Item
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
                   href="/report/found"
                   className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-6 py-3.5 font-semibold text-white backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/15 active:scale-[0.97]"
                 >
-                  I-Post ang nahanap
+                  Post a Found Item
                   <ChevronRight className="h-4 w-4" />
                 </Link>
               </div>

@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import Link from "next/link";
 import {
@@ -18,7 +18,7 @@ const VALUES = [
   {
     Icon: Heart,
     title: "Built with pagtutulungan",
-    body: "FindBack PH is not a startup from San Francisco. It's built by Filipinos who've lost phones in jeeps, wallets in MRT, and laptops inside Grab cars — and know exactly how frustrating it is when nothing and no one can help.",
+    body: "FindBack PH is not a startup from San Francisco. It's built by Filipinos who&apos;ve lost phones in jeeps, wallets in MRT, and laptops inside Grab cars — and know exactly how frustrating it is when nothing and no one can help.",
     tone: "from-rose-500 to-pink-600",
   },
   {
@@ -36,7 +36,7 @@ const VALUES = [
   {
     Icon: Flag,
     title: "Honesty over hype",
-    body: "We won't tell you your item is 'guaranteed' to come back — because nothing in life is guaranteed. We'll promise you this: we give every report the best possible shot at a reunion. That's the only promise we can keep, so it's the only one we make.",
+    body: "We won&apos;t tell you your item is 'guaranteed' to come back — because nothing in life is guaranteed. We'll promise you this: we give every report the best possible shot at a reunion. that&apos;s the only promise we can keep, so it&apos;s the only one we make.",
     tone: "from-amber-500 to-orange-600",
   },
 ];
@@ -74,9 +74,9 @@ export default function About() {
               Made in Manila · For every Pilipino
             </span>
             <h1 className="mt-5 text-balance text-4xl font-bold leading-tight tracking-tight text-slate-900 sm:text-5xl md:text-6xl">
-              Isang platform para sa lahat ng
+              A community-driven platform for every
               <br />
-              <span className="stat-num">nag-nanabik na maibalik ang kanilang gamit.</span>
+              <span className="stat-num">waiting to get back what&apos;s theirs.</span>
             </h1>
             <p className="mt-6 text-lg leading-relaxed text-slate-600 sm:text-xl">
               FindBack PH is a community-powered lost-and-found for the Philippines. We believe a phone left in a
@@ -90,7 +90,7 @@ export default function About() {
             </p>
             <div className="mt-8 flex flex-wrap items-center gap-3">
               <Link href="/report/lost" className="btn-primary btn-primary--violet inline-flex items-center gap-2">
-                Gumawa ng report
+                Do ng report
                 <ArrowRight className="h-4 w-4" />
               </Link>
               <Link href="/how-it-works" className="btn-secondary inline-flex items-center gap-2">
@@ -105,7 +105,7 @@ export default function About() {
                 <Sparkles className="h-8 w-8" strokeWidth={2.1} />
               </div>
               <blockquote className="mt-6 text-2xl font-semibold leading-snug tracking-tight text-slate-900">
-                {`"Hindi mo talaga maibabalik ang lahat ng nawawala — pero sa FindBack PH, hindi ka man lang bibigyan ng zero na pagkakataon."`}
+                {`"You'll never get back everything you lose — but at FindBack PH, you'll never be given zero chances either."`}
               </blockquote>
               <div className="mt-7 flex items-center gap-4 border-t border-slate-200/70 pt-5">
                 <div className="grid h-12 w-12 place-items-center rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 text-lg font-bold text-white">
@@ -141,7 +141,7 @@ export default function About() {
 
       <section className="relative mx-auto w-full max-w-6xl px-5 pb-24 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="pill pill-indigo text-sm">Ang aming mga prinsipyo</span>
+          <span className="pill pill-indigo text-sm">Our guiding principles</span>
           <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             Four values we never trade.
           </h2>
@@ -171,7 +171,7 @@ export default function About() {
 
       <section className="relative mx-auto w-full max-w-6xl px-5 pb-24 sm:px-6">
         <div className="mx-auto max-w-2xl text-center">
-          <span className="pill pill-emerald text-sm">Ang kwento namin</span>
+          <span className="pill pill-emerald text-sm">Our story</span>
           <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             From LRT-2 lost phones to 81 provinces.
           </h2>
@@ -210,13 +210,13 @@ export default function About() {
 
       <section className="relative mx-auto w-full max-w-6xl px-5 pb-24 sm:px-6">
         <div className="mx-auto max-w-3xl text-center">
-          <span className="pill pill-sky text-sm">Kasama natin sila</span>
+          <span className="pill pill-sky text-sm">Backed by them</span>
           <h2 className="mt-4 text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
             Backed by the institutions that keep Pinas moving.
           </h2>
           <p className="mt-3 text-slate-600">
-            Hindi kami nag-iisa. These universities, malls, and companies believe the Philippines deserves a
-            real lost-and-found system — and {`they've`} opened their campuses, desks, and hearts to make it happen.
+            We&apos;re not alone. These universities, malls, and companies believe the Philippines deserves a
+            real lost-and-found system — and {`they&apos;ve`} opened their campuses, desks, and hearts to make it happen.
           </p>
         </div>
         <div className="mt-10 grid grid-cols-2 gap-4 sm:grid-cols-4">
@@ -241,35 +241,35 @@ export default function About() {
             <div className="pointer-events-none absolute inset-0 grid-lines opacity-30" />
             <div className="relative mx-auto max-w-3xl text-center text-white">
               <span className="inline-flex items-center gap-2 rounded-full border border-white/20 bg-white/10 px-4 py-1.5 text-sm font-medium backdrop-blur">
-                🇵🇭 Magsama-sama tayo
+                🇵🇭 Let&apos;s build this together
               </span>
               <h3 className="mt-5 text-3xl font-bold leading-tight tracking-tight sm:text-5xl">
-                Isang nahanap na gamit
+                One found item
                 <br />
                 ay isang masayang Pilipino.
               </h3>
               <p className="mx-auto mt-4 max-w-xl text-base leading-relaxed text-indigo-100/95 sm:text-lg">
                 Start a report in under 2 minutes. Share this page with one friend. Help us turn every {`"sayang naman"`}
-                into a {`"salamat at nahanap ko."`}
+                into a {`"I found it."`}
               </p>
               <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
                 <Link
                   href="/report/lost"
                   className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3.5 font-semibold text-indigo-700 shadow-lg shadow-black/10 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl active:scale-[0.97]"
                 >
-                  I-Report ang nawala
+                  Report a Lost Item
                   <ArrowRight className="h-4 w-4" />
                 </Link>
                 <Link
                   href="/report/found"
                   className="inline-flex items-center gap-2 rounded-xl border border-white/25 bg-white/10 px-6 py-3.5 font-semibold text-white backdrop-blur transition-all duration-200 hover:-translate-y-0.5 hover:bg-white/15 active:scale-[0.97]"
                 >
-                  I-Post ang nahanap
+                  Post a Found Item
                   <ChevronRight className="h-4 w-4" />
                 </Link>
               </div>
               <p className="mt-6 text-sm text-indigo-100/80">
-                🔒 100% free · Walang hidden charges · Open to every barangay
+                🔒 100% free · No hidden charges · Open to every barangay
               </p>
             </div>
           </div>

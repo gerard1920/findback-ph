@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { useActionState, useRef, useState, useTransition } from "react";
+import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { updateItem, FormState } from "@/app/actions";
 
 const initialState: FormState = {};
@@ -36,10 +36,32 @@ export function EditItemForm({
   dateValue: string;
 }) {
   const [state, action, pending] = useActionState(updateItem.bind(null, item.id), initialState);
-  const [uploadedUrls, setUploadedUrls] = useState<string[]>([]);
+  const [uploadedUrls, setUploadedUrls] = useState<string[]>(() => {
+    const saved = localStorage.getItem(`edit_draft_${item.id}`);
+    if (saved) {
+      try {
+        const d = JSON.parse(saved) as { uploadedUrls?: string[] };
+        if (d.uploadedUrls) return d.uploadedUrls;
+      } catch { /* ignore */ }
+    }
+    return [];
+  });
   const [uploading, startUploading] = useTransition();
 
   const fileRef = useRef<HTMLInputElement>(null);
+
+  // Draft autosave for uploaded URLs
+  useEffect(() => {
+    localStorage.setItem(`edit_draft_${item.id}`, JSON.stringify({ uploadedUrls }));
+  }, [item.id, uploadedUrls]);
+
+  // Clear draft on successful save
+  useEffect(() => {
+    if (state.success) {
+      localStorage.removeItem(`edit_draft_${item.id}`);
+    }
+  }, [state.success, item.id]);
+
 
   async function handleImages(files: FileList | null) {
     if (!files?.length) return;

@@ -1,4 +1,4 @@
-import type { Metadata, Viewport } from "next";
+﻿import type { Metadata, Viewport } from "next";
 import { Inter } from "next/font/google";
 import Link from "next/link";
 import "./globals.css";
@@ -24,7 +24,7 @@ export const metadata: Metadata = {
     "The Philippines' most trusted community lost and found. Report lost or found items in under 2 minutes. AI-powered matching, private ownership verification, and secure handovers across 81 provinces.",
   keywords: [
     "lost and found Philippines",
-    "nawawalang gamit",
+    "lost and found items",
     "find lost phone Manila",
     "report lost wallet PH",
     "balik gamit",
@@ -157,7 +157,7 @@ export default async function RootLayout({
                 </span>
               </div>
               <p className="mt-4 leading-relaxed text-slate-600">
-                Ang nawala&apos;y babalik. The Filipino community platform for reporting lost and found items safely.
+                What&apos;s lost can be returned. The Filipino community platform for reporting lost and found items safely.
               </p>
             </div>
             <div className="grid grid-cols-2 gap-x-12 gap-y-3 text-slate-600 md:grid-cols-3">
@@ -188,7 +188,7 @@ export default async function RootLayout({
             </div>
           </div>
           <div className="container-page flex flex-col items-start justify-between gap-2 border-t border-slate-200/70 py-6 text-xs text-slate-500 sm:flex-row sm:items-center">
-            <p>© {new Date().getFullYear()} FindBack PH. Ginawa nang may pagmamahal para sa lahat ng Pilipino. 🇵🇭</p>
+            <p>© {new Date().getFullYear()} FindBack PH. Made with care for every Filipino. 🇵🇭</p>
             <p>Privacy-first · No payments on-platform · Verify ownership always</p>
           </div>
         </footer>
