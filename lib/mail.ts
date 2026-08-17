@@ -43,6 +43,31 @@ export function isAnyEmailConfigured(): boolean {
   return isResendConfigured() || isSmtpConfigured() || isDevEmailMode();
 }
 
+export function canSendEmail(): boolean {
+  return isAnyEmailConfigured();
+}
+
+export async function sendGenericEmail({ to, subject, html }: { to: string; subject: string; html: string }): Promise<void> {
+  const apiKey = envValue("RESEND_API_KEY");
+  if (apiKey) {
+    const from = envValue("RESEND_FROM_EMAIL") || "FindBack PH <onboarding@resend.dev>";
+    const resend = new Resend(apiKey);
+    const response = await resend.emails.send({ from, to: to.trim().toLowerCase(), subject, html });
+    if (response.error) throw new Error(response.error.message || "Failed to send email.");
+    return;
+  }
+
+  const host = envValue("SMTP_HOST");
+  const port = parseInt(envValue("SMTP_PORT") || "587", 10);
+  const user = envValue("SMTP_USER");
+  const pass = envValue("SMTP_PASS");
+  const secure = envValue("SMTP_SECURE").toLowerCase() === "true";
+  const from = envValue("SMTP_FROM_EMAIL") || envValue("SMTP_USER");
+  if (!host || !user || !pass) throw new Error("SMTP is not configured.");
+  const transporter = nodemailer.createTransport({ host, port, secure, auth: { user, pass } });
+  await transporter.sendMail({ from, to: to.trim().toLowerCase(), subject, html });
+}
+
 export function isResendTestSender(): boolean {
   const from = envValue("RESEND_FROM_EMAIL").toLowerCase();
   return !from || from.includes("@resend.dev");

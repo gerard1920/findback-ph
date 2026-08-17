@@ -17,12 +17,32 @@ model User {
   campus                  String?
   preferredProvince       String?
   preferredCity           String?
+  allowMessages           Boolean             @default(true)
+  allowMessageRequests    Boolean             @default(true)
   notifyOnCommentEmail    Boolean             @default(true)
   notifyOnCommentInApp    Boolean             @default(true)
   notifyOnClaimEmail      Boolean             @default(true)
   notifyOnClaimInApp      Boolean             @default(true)
   notifyOnMessageEmail    Boolean             @default(true)
   notifyOnMessageInApp    Boolean             @default(true)
+  notifyPossibleMatchInApp Boolean            @default(true)
+  notifyPossibleMatchEmail Boolean            @default(true)
+  notifySimilarFoundInApp  Boolean             @default(true)
+  notifySimilarFoundEmail  Boolean             @default(true)
+  notifyReportUpdatesInApp Boolean            @default(true)
+  notifyReportUpdatesEmail Boolean            @default(true)
+  notifyItemStatusInApp    Boolean             @default(true)
+  notifyItemStatusEmail    Boolean             @default(true)
+  notifyMessageRequestInApp Boolean           @default(true)
+  notifyMessageRequestEmail Boolean           @default(true)
+  notifySuspiciousInApp    Boolean             @default(true)
+  notifySuspiciousEmail    Boolean             @default(true)
+  notifySecurityInApp      Boolean             @default(true)
+  notifySecurityEmail      Boolean             @default(true)
+  notifyAccountInApp       Boolean             @default(true)
+  notifyAccountEmail       Boolean             @default(true)
+  notifyImportantEmail     Boolean             @default(true)
+  notifyWeeklySummary      Boolean             @default(true)
   role                    String                @default("USER")
   status                  String                @default("ACTIVE")
   createdAt               DateTime            @default(now())
@@ -31,6 +51,7 @@ model User {
   savedItems              SavedItem[]
   notifications           Notification[]
   messages                Message[]
+  messageReactions        MessageReaction[]
   reportsMade             Report[]            @relation("ReportReporter")
   reportsAboutMe          Report[]            @relation("ReportedUser")
   blockedUsers            Block[]             @relation("Blocker")
@@ -129,30 +150,60 @@ model Conversation {
   item           Item?     @relation(fields: [itemId], references: [id], onDelete: SetNull)
   participantAId String
   participantBId String
+  pinnedByA      Boolean   @default(false)
+  pinnedByB      Boolean   @default(false)
   createdAt      DateTime  @default(now())
   messages       Message[]
   @@unique([itemId, participantAId, participantBId])
 }
 model Message {
-  id             String       @id @default(uuid())
-  conversationId String
-  conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
-  senderId       String
-  sender         User         @relation(fields: [senderId], references: [id])
-  body           String
-  readAt         DateTime?
-  createdAt      DateTime     @default(now())
+  id              String       @id @default(uuid())
+  conversationId  String
+  conversation    Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  senderId        String
+  sender          User         @relation(fields: [senderId], references: [id])
+  type            String       @default("TEXT")
+  body            String
+  attachmentUrl   String?
+  attachmentName  String?
+  attachmentSize  Int?
+  attachmentMime  String?
+  durationSeconds Int?
+  replyToId       String?
+  replyTo         Message?     @relation("MessageReply", fields: [replyToId], references: [id])
+  status          String       @default("SENT")
+  deliveredAt     DateTime?
+  readAt          DateTime?
+  deletedAt       DateTime?
+  createdAt       DateTime     @default(now())
+  reactions       MessageReaction[]
+  replies         Message[]    @relation("MessageReply")
   @@index([conversationId, createdAt])
 }
+model MessageReaction {
+  id         String   @id @default(uuid())
+  messageId  String
+  message    Message  @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji      String
+  createdAt  DateTime @default(now())
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+}
 model Notification {
-  id        String    @id @default(uuid())
-  userId    String
-  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  title     String
-  body      String
-  link      String?
-  readAt    DateTime?
-  createdAt DateTime  @default(now())
+  id              String    @id @default(uuid())
+  userId          String
+  user            User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  type            String    @default("general")
+  title           String
+  body            String
+  icon            String?
+  referenceId     String?
+  referenceType   String?
+  link            String?
+  readAt          DateTime?
+  createdAt       DateTime  @default(now())
   @@index([userId, readAt])
 }
 model SavedItem {
